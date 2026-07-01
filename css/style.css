@@ -1,0 +1,285 @@
+:root {
+  --bg: #0c0b0a;
+  --bg2: #161412;
+  --card: #1d1a17;
+  --rust: #b5481f;
+  --rust-light: #e0703c;
+  --blood: #7a1f1f;
+  --text: #e8e1d6;
+  --text-dim: #9a9286;
+  --border: #3a322a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(181,72,31,0.06), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(122,31,31,0.08), transparent 45%);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 480px;
+}
+
+.title {
+  text-align: center;
+  font-size: 52px;
+  letter-spacing: 8px;
+  color: var(--rust-light);
+  text-shadow: 0 0 18px rgba(224,112,60,0.35);
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 36px;
+}
+
+/* ---- Панелі ---- */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--rust);
+  padding: 28px 24px;
+  margin-bottom: 18px;
+  position: relative;
+}
+
+.panel-label {
+  position: absolute;
+  top: -11px;
+  left: 16px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--rust-light);
+  text-transform: uppercase;
+}
+
+/* ---- Форми ---- */
+label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 16px;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--rust);
+}
+
+input#joinCode {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-align: center;
+  font-size: 20px;
+}
+
+/* ---- Кнопки ---- */
+button {
+  width: 100%;
+  background: var(--rust);
+  border: 1px solid var(--rust-light);
+  color: #100b08;
+  font-weight: bold;
+  padding: 13px;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover {
+  background: var(--rust-light);
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button.secondary:hover {
+  border-color: var(--text-dim);
+  background: rgba(255,255,255,0.03);
+}
+
+/* ---- Розділювач ---- */
+.divider {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin: 24px 0;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 38%;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider::before { left: 0; }
+.divider::after  { right: 0; }
+
+/* ---- Допоміжні ---- */
+.footer-note {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-top: 20px;
+  line-height: 1.6;
+}
+
+.error {
+  color: var(--rust-light);
+  font-size: 12px;
+  margin: -8px 0 14px;
+  min-height: 14px;
+}
+
+/* ---- Картка гравця ---- */
+.attr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  gap: 10px;
+}
+
+.attr-label {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  min-width: 110px;
+}
+
+.attr-value {
+  color: var(--text);
+  flex: 1;
+}
+
+.reveal-btn {
+  width: auto;
+  padding: 5px 12px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  background: transparent;
+  border: 1px solid var(--rust);
+  color: var(--rust-light);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.reveal-btn:hover {
+  background: var(--rust);
+  color: #100b08;
+}
+
+/* ---- Інші гравці ---- */
+.other-player {
+  margin-bottom: 16px;
+}
+
+.other-player-name {
+  font-size: 13px;
+  color: var(--rust-light);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.dead-tag {
+  color: var(--blood);
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+/* ---- Голосування ---- */
+.vote-player-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.vote-btn {
+  width: auto;
+  padding: 5px 14px;
+  font-size: 11px;
+  background: var(--blood);
+  border: 1px solid var(--rust);
+  color: var(--text);
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.vote-btn:hover {
+  background: var(--rust);
+}
+
+.vote-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.vote-count {
+  color: var(--rust-light);
+  font-size: 13px;
+}
+
+/* ---- Фінал ---- */
+#finaleText {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}

@@ -1,313 +1,146 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Бункер</title>
-<style>
-  :root{
-    --bg:#0c0b0a;
-    --bg2:#161412;
-    --card:#1d1a17;
-    --rust:#b5481f;
-    --rust-light:#e0703c;
-    --blood:#7a1f1f;
-    --text:#e8e1d6;
-    --text-dim:#9a9286;
-    --border:#3a322a;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{
-    background:var(--bg);
-    background-image:
-      radial-gradient(circle at 20% 20%, rgba(181,72,31,0.06), transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(122,31,31,0.08), transparent 45%);
-    color:var(--text);
-    font-family:'Courier New', monospace;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
-  .wrap{ width:100%; max-width:480px; }
-  .title{
-    text-align:center; font-size:52px; letter-spacing:8px;
-    color:var(--rust-light); text-shadow:0 0 18px rgba(224,112,60,0.35);
-    margin-bottom:4px; font-weight:bold;
-  }
-  .subtitle{
-    text-align:center; color:var(--text-dim); font-size:13px;
-    letter-spacing:3px; text-transform:uppercase; margin-bottom:36px;
-  }
-  .panel{
-    background:var(--card); border:1px solid var(--border);
-    border-left:3px solid var(--rust); padding:28px 24px;
-    margin-bottom:18px; position:relative;
-  }
-  .panel-label{
-    position:absolute; top:-11px; left:16px; background:var(--bg);
-    padding:0 8px; font-size:11px; letter-spacing:2px;
-    color:var(--rust-light); text-transform:uppercase;
-  }
-  label{
-    display:block; font-size:12px; letter-spacing:1px; color:var(--text-dim);
-    text-transform:uppercase; margin-bottom:8px;
-  }
-  input{
-    width:100%; background:var(--bg2); border:1px solid var(--border);
-    color:var(--text); padding:12px 14px; font-family:inherit;
-    font-size:16px; letter-spacing:1px; margin-bottom:16px;
-  }
-  input:focus{ outline:none; border-color:var(--rust); }
-  input#joinCode{
-    text-transform:uppercase; letter-spacing:4px; text-align:center; font-size:20px;
-  }
-  button{
-    width:100%; background:var(--rust); border:1px solid var(--rust-light);
-    color:#100b08; font-weight:bold; padding:13px; font-family:inherit;
-    font-size:14px; letter-spacing:2px; text-transform:uppercase; cursor:pointer;
-    transition:background 0.15s;
-  }
-  button:hover{ background:var(--rust-light); }
-  button.secondary{ background:transparent; color:var(--text); border:1px solid var(--border); }
-  button.secondary:hover{ border-color:var(--text-dim); background:rgba(255,255,255,0.03); }
-  .divider{
-    text-align:center; color:var(--text-dim); font-size:11px; letter-spacing:2px;
-    margin:24px 0; text-transform:uppercase; position:relative;
-  }
-  .divider::before,.divider::after{
-    content:""; position:absolute; top:50%; width:38%; height:1px; background:var(--border);
-  }
-  .divider::before{left:0;}
-  .divider::after{right:0;}
-  .footer-note{
-    text-align:center; color:var(--text-dim); font-size:11px;
-    margin-top:20px; line-height:1.6;
-  }
-  .error{ color:var(--rust-light); font-size:12px; margin:-8px 0 14px; min-height:14px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Бункер</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<div class="wrap" id="lobbyScreen" style="display:none;">
-  <div class="title" style="font-size:34px;">КОМНАТА <span id="roomCodeDisplay"></span></div>
-  <div class="subtitle">ожидание игроков</div>
+  <!-- ЕКРАН 1: Стартовий -->
+  <div class="wrap" id="landingScreen">
+    <div class="title">БУНКЕР</div>
+    <div class="subtitle">гра на виживання</div>
 
-  <div class="panel">
-    <div class="panel-label">Игроки</div>
-    <div id="playersList"></div>
+    <div class="panel">
+      <div class="panel-label">Нова гра</div>
+      <label for="hostName">Ваше ім'я</label>
+      <input type="text" id="hostName" placeholder="Введіть ім'я" maxlength="20">
+      <button id="createBtn">Створити кімнату</button>
+    </div>
+
+    <div class="divider">або</div>
+
+    <div class="panel">
+      <div class="panel-label">Приєднатись</div>
+      <label for="joinName">Ваше ім'я</label>
+      <input type="text" id="joinName" placeholder="Введіть ім'я" maxlength="20">
+      <label for="joinCode">Код кімнати</label>
+      <input type="text" id="joinCode" placeholder="XXXX" maxlength="4">
+      <div class="error" id="joinError"></div>
+      <button class="secondary" id="joinBtn">Приєднатись</button>
+    </div>
+
+    <div class="footer-note">
+      Створіть кімнату і скиньте код друзям —<br>
+      кожен заходить зі свого пристрою.
+    </div>
   </div>
 
-  <div class="panel" id="hostSettings" style="display:none;">
-    <div class="panel-label">Настройки (хост)</div>
-    <label for="capacityInput">Вместимость бункера (сколько выживет)</label>
-    <input type="number" id="capacityInput" value="4" min="1" max="20" />
-    <button id="startGameBtn">Начать игру</button>
+  <!-- ЕКРАН 2: Лобі -->
+  <div class="wrap" id="lobbyScreen" style="display:none;">
+    <div class="title" style="font-size:34px;">
+      КІМНАТА <span id="roomCodeDisplay"></span>
+    </div>
+    <div class="subtitle">очікування гравців</div>
+
+    <div class="panel">
+      <div class="panel-label">Гравці</div>
+      <div id="playersList"></div>
+    </div>
+
+    <div class="panel" id="hostSettings" style="display:none;">
+      <div class="panel-label">Налаштування (хост)</div>
+      <label for="capacityInput">Місткість бункера (скільки виживе)</label>
+      <input type="number" id="capacityInput" value="4" min="1" max="20">
+      <button id="startGameBtn">Почати гру</button>
+    </div>
+
+    <div class="footer-note" id="waitingNote">
+      Очікуємо, поки хост почне гру...
+    </div>
   </div>
 
-  <div class="footer-note" id="waitingNote">Ожидаем, пока хост начнет игру...</div>
-</div> 
+  <!-- ЕКРАН 3: Гра -->
+  <div class="wrap" id="gameScreen" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div class="title" style="font-size:28px;">БУНКЕР</div>
+      <div style="color:var(--text-dim);font-size:12px;letter-spacing:2px;">
+        РАУНД <span id="roundDisplay">1</span>
+      </div>
+    </div>
 
-<div class="wrap" id="startScreen">
-  <div class="title">БУНКЕР</div>
+    <div style="color:var(--rust-light);font-size:12px;letter-spacing:1px;margin-bottom:6px;">
+      ⚠ <span id="catastropheDisplay"></span>
+    </div>
+    <div style="color:var(--text-dim);font-size:11px;margin-bottom:24px;">
+      🏠 <span id="bunkerDisplay"></span>
+    </div>
 
-  <div class="subtitle">игра на выживание</div>
+    <div class="panel" id="myCardPanel">
+      <div class="panel-label">Ваша картка</div>
+      <div id="myCardContent"></div>
+    </div>
 
-  <div class="panel">
-    <div class="panel-label">Новая игра</div>
-    <label for="hostName">Ваше имя</label>
-    <input type="text" id="hostName" placeholder="Введите имя" maxlength="20" />
-    <button id="createBtn">Создать комнату</button>
+    <div class="panel">
+      <div class="panel-label">Інші гравці</div>
+      <div id="othersContent"></div>
+    </div>
+
+    <button id="startVoteBtn" style="display:none;margin-top:12px;">
+      Почати голосування
+    </button>
   </div>
 
-  <div class="divider">или</div>
+  <!-- ЕКРАН 4: Голосування -->
+  <div class="wrap" id="voteScreen" style="display:none;">
+    <div class="title" style="font-size:28px;margin-bottom:6px;">ГОЛОСУВАННЯ</div>
+    <div class="subtitle" style="margin-bottom:24px;">хто покидає бункер?</div>
 
-  <div class="panel">
-    <div class="panel-label">Присоединиться</div>
-    <label for="joinName">Ваше имя</label>
-    <input type="text" id="joinName" placeholder="Введите имя" maxlength="20" />
-    <label for="joinCode">Код комнаты</label>
-    <input type="text" id="joinCode" placeholder="XXXX" maxlength="4" />
-    <div class="error" id="joinError"></div>
-    <button class="secondary" id="joinBtn">Присоединиться</button>
+    <div class="panel">
+      <div class="panel-label">Проголосуйте</div>
+      <div id="voteList"></div>
+    </div>
+
+    <div style="color:var(--text-dim);font-size:12px;text-align:center;margin-top:8px;">
+      Проголосували: <span id="voteCountDisplay">0</span> / <span id="voteTotalDisplay">0</span>
+    </div>
+
+    <div class="panel" style="margin-top:18px;display:none;" id="voteResultPanel">
+      <div class="panel-label">Результат</div>
+      <div id="voteResultText"></div>
+    </div>
+
+    <button id="nextRoundBtn" style="display:none;margin-top:12px;">
+      Наступний раунд
+    </button>
   </div>
 
-  <div class="footer-note">
-    Создайте комнату и скиньте код друзьям —<br />
-    каждый заходит со своего устройства.
+  <!-- ЕКРАН 5: Фінал -->
+  <div class="wrap" id="finaleScreen" style="display:none;">
+    <div class="title" style="font-size:34px;margin-bottom:6px;">ВИЖИЛИ</div>
+    <div class="subtitle" style="margin-bottom:24px;">історія бункера</div>
+
+    <div class="panel">
+      <div class="panel-label">Виживші</div>
+      <div id="survivorsList"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label">Розповідь ШІ</div>
+      <div id="finaleText" style="color:var(--text-dim);font-style:italic;">
+        Генеруємо історію...
+      </div>
+    </div>
   </div>
-</div>
 
-<script>
-  const myId = 'p_' + Math.random().toString(36).slice(2, 10);
-  let myName = '';
-  let roomCode = '';
-  let isHost = false;
-  let pollTimer = null;
-
-  // Заглушка, чтобы редактор не ругался на window.storage
-  if (!window.storage) {
-    window.storage = {
-      data: {},
-      async set(key, value) { this.data[key] = value; return true; },
-      async get(key) { return this.data[key] ? { value: this.data[key] } : null; }
-    };
-  }
-
-  function generateRoomCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 4; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
-  }
-
-  async function createRoom(hostName) {
-    myName = hostName;
-    isHost = true;
-    roomCode = generateRoomCode();
-
-    const room = {
-      code: roomCode,
-      hostId: myId,
-      status: 'lobby',
-      players: [
-        { id: myId, name: hostName, alive: true, card: null, revealed: [] }
-      ],
-      capacity: 4,
-      catastrophe: null,
-      bunker: null,
-      round: 0,
-      votes: {},
-      votingOpen: false,
-      log: [],
-      finale: null,
-      createdAt: Date.now()
-    };
-
-    await window.storage.set('room:' + roomCode, JSON.stringify(room), true);
-    startPolling();
-    return room;
-  }
-
-  async function joinRoom(code, name) {
-    code = code.toUpperCase();
-    let result;
-    try {
-      result = await window.storage.get('room:' + code, true);
-    } catch (e) {
-      throw new Error('Комната не найдена. Проверьте код.');
-    }
-    if (!result) throw new Error('Комната не найдена. Проверьте код.');
-
-    const room = JSON.parse(result.value);
-
-    if (room.status !== 'lobby') {
-      throw new Error('Игра уже началась, присоединиться нельзя.');
-    }
-    if (room.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      throw new Error('Игрок с таким именем уже есть в комнате.');
-    }
-
-    room.players.push({ id: myId, name, alive: true, card: null, revealed: [] });
-    await window.storage.set('room:' + code, JSON.stringify(room), true);
-
-    myName = name;
-    roomCode = code;
-    isHost = false;
-    startPolling();
-    return room;
-  }
-
-  async function fetchRoom() {
-    try {
-      const result = await window.storage.get('room:' + roomCode, true);
-      return result ? JSON.parse(result.value) : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function startPolling() {
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(async () => {
-      const room = await fetchRoom();
-      if (room) renderRoom(room);
-    }, 2500);
-  }
-
-  function renderRoom(room) {
-    const startScreen = document.getElementById('startScreen');
-    if (startScreen) startScreen.style.display = 'none';
-    
-    document.getElementById('lobbyScreen').style.display = 'block';
-    document.getElementById('roomCodeDisplay').textContent = room.code;
-
-    const list = document.getElementById('playersList');
-    list.innerHTML = '';
-    room.players.forEach(p => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;';
-      const isMe = p.id === myId ? ' (вы)' : '';
-      const hostTag = p.id === room.hostId ? ' 👑' : '';
-      row.innerHTML = '<span>' + p.name + isMe + hostTag + '</span>';
-      list.appendChild(row);
-    });
-
-    const hostSettings = document.getElementById('hostSettings');
-    const waitingNote = document.getElementById('waitingNote');
-    if (room.hostId === myId) {
-      hostSettings.style.display = 'block';
-      waitingNote.style.display = 'none';
-    } else {
-      hostSettings.style.display = 'none';
-      waitingNote.style.display = 'block';
-    }
-  }
-
-  document.getElementById('createBtn').addEventListener('click', async () => {
-    const name = document.getElementById('hostName').value.trim();
-    if (!name) { alert('Введите имя'); return; }
-    const room = await createRoom(name);
-    renderRoom(room);
-  });
-
-  document.getElementById('joinBtn').addEventListener('click', async () => {
-    const name = document.getElementById('joinName').value.trim();
-    const code = document.getElementById('joinCode').value.trim().toUpperCase();
-    const err = document.getElementById('joinError');
-    err.textContent = '';
-    if (!name) { err.textContent = 'Введите имя'; return; }
-    if (code.length !== 4) { err.textContent = 'Код комнаты - 4 символа'; return; }
-    try {
-      const room = await joinRoom(code, name);
-      renderRoom(room);
-    } catch (e) {
-      err.textContent = e.message;
-    }
-  }); 
-
-  document.getElementById('startGameBtn').addEventListener('click', async () => {
-    const capacity = parseInt(document.getElementById('capacityInput').value, 10);
-    if (!capacity || capacity < 1) { alert('Укажите корректную вместимость бункера'); return; }
-
-    const room = await fetchRoom();
-    if (!room) return;
-
-    if (capacity >= room.players.length) {
-      alert('Вместимость бункера должна быть меньше количества игроков, иначе некого исключать');
-      return;
-    }
-
-    room.capacity = capacity;
-    room.status = 'starting'; 
-    await window.storage.set('room:' + room.code, JSON.stringify(room), true);
-    alert('Настройки сохранены. В следующем шаге добавим генерацию персонажей и реальный старт.');
-  }); 
-</script>
+  <!-- JS файли — порядок важливий! -->
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/main.js"></script>
 
 </body>
 </html>

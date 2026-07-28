@@ -44,8 +44,7 @@ function renderMyCard(me, round) {
     return;
   }
 
-  const revealed = me.revealed || [];
-  // Скільки вже розкрито в цьому раунді — порівнюємо з номером раунду
+  const revealed  = me.revealed || [];
   const canReveal = revealed.length < round;
 
   ATTR_KEYS.forEach(key => {
@@ -66,19 +65,15 @@ function renderMyCard(me, round) {
         <button class="reveal-btn" onclick="revealAttr('${key}')">Розкрити</button>
       `;
     } else {
-      // Ліміт раунду вичерпано — кнопка заблокована
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
         <span class="attr-value" style="color:var(--text-dim);">???</span>
         <span style="font-size:11px;color:var(--border);">закрито</span>
       `;
     }
-
+    container.appendChild(row);
   });
 }
-    container.appendChild(row);
-  
-
 
 function renderOthers(players) {
   const container = document.getElementById('othersContent');
@@ -92,11 +87,11 @@ function renderOthers(players) {
   }
 
   others.forEach(p => {
-    const block = document.createElement('div');
+    const block   = document.createElement('div');
     block.className = 'other-player';
 
-    const deadTag = !p.alive ? '<span class="dead-tag">☠ вибув</span>' : '';
-    const revealed = p.revealed || []; // захист від null
+    const deadTag  = !p.alive ? '<span class="dead-tag">☠ вибув</span>' : '';
+    const revealed = p.revealed || [];
 
     let html = `<div class="other-player-name">${p.name}${deadTag}</div>`;
 
@@ -125,7 +120,7 @@ function renderGame(room) {
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
 
   const me = room.players.find(p => p.id === myId);
-if (me && me.card) renderMyCard(me, room.round);
+  if (me && me.card) renderMyCard(me, room.round);
 
   renderOthers(room.players);
 
@@ -139,7 +134,7 @@ if (me && me.card) renderMyCard(me, room.round);
 function renderVoteScreen(room) {
   showScreen('voteScreen');
 
-  const list        = document.getElementById('voteList');
+  const list         = document.getElementById('voteList');
   const alivePlayers = room.players.filter(p => p.alive);
   const totalVoters  = alivePlayers.length;
   const votedCount   = Object.keys(room.votes || {}).length;
@@ -157,8 +152,31 @@ function renderVoteScreen(room) {
     list.appendChild(notice);
   }
 
-  const myVote   = room.votes?.[myId];
-  const iVoted   = !!myVote;
+  const myVote = room.votes?.[myId];
+  const iVoted = !!myVote;
+
+  // Список кандидатів
+  const candidates = room.tieIds
+    ? room.players.filter(p => room.tieIds.includes(p.id))
+    : room.players.filter(p => p.alive && p.id !== myId);
+
+  candidates.forEach(p => {
+    const voteCount  = Object.values(room.votes || {}).filter(v => v === p.id).length;
+    const isMyChoice = myVote === p.id;
+    const row        = document.createElement('div');
+    row.className    = 'vote-player-row';
+    row.innerHTML    = `
+      <span style="flex:1;">${p.name}</span>
+      <span class="vote-count">${voteCount} 🗳</span>
+      <button class="vote-btn"
+        style="${isMyChoice ? 'background:var(--rust);' : ''}"
+        ${iVoted ? 'disabled' : ''}
+        onclick="castVote('${p.id}')">
+        ${isMyChoice ? '✓ Ваш вибір' : 'Вигнати'}
+      </button>
+    `;
+    list.appendChild(row);
+  });
 
   // Ліміт скіпів
   const totalPlayers = room.players.length;
@@ -166,15 +184,13 @@ function renderVoteScreen(room) {
   const skipsUsed    = room.skipsUsed || 0;
   const skipsLeft    = skipLimit - skipsUsed;
   const skipBlocked  = skipsLeft <= 0;
-
-  const skipCount  = Object.values(room.votes || {}).filter(v => v === 'skip').length;
-  const mySkipped  = myVote === 'skip';
+  const skipCount    = Object.values(room.votes || {}).filter(v => v === 'skip').length;
+  const mySkipped    = myVote === 'skip';
 
   const skipRow = document.createElement('div');
   skipRow.style.cssText = 'margin-top:14px;padding-top:14px;border-top:1px solid var(--border);';
 
   if (skipBlocked) {
-    // Ліміт вичерпано — показуємо повідомлення
     skipRow.innerHTML = `
       <div style="color:var(--blood);font-size:12px;text-align:center;letter-spacing:1px;">
         ⛔ Ліміт скіпів вичерпано (${skipsUsed}/${skipLimit})
@@ -188,26 +204,10 @@ function renderVoteScreen(room) {
         onclick="castVote('skip')">
         ${mySkipped
           ? '✓ Ви пропустили'
-          : `Пропустити (${skipCount} | залишилось скіпів: ${skipsLeft})`}
+          : `Пропустити (${skipCount} | залишилось: ${skipsLeft}/${skipLimit})`}
       </button>
     `;
   }
-  list.appendChild(skipRow);
-
-  // Кнопка "Пропустити" — окремо під списком
-  const skipCount = Object.values(room.votes || {}).filter(v => v === 'skip').length;
-  const mySkipped = myVote === 'skip';
-
-  const skipRow = document.createElement('div');
-  skipRow.style.cssText = 'margin-top:14px;padding-top:14px;border-top:1px solid var(--border);';
-  skipRow.innerHTML = `
-    <button class="secondary"
-      style="font-size:12px;padding:10px;${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
-      ${iVoted ? 'disabled' : ''}
-      onclick="castVote('skip')">
-      ${mySkipped ? '✓ Ви пропустили' : `Пропустити голосування (${skipCount})`}
-    </button>
-  `;
   list.appendChild(skipRow);
 
   // Хост бачить кнопку підсумку коли всі проголосували
@@ -249,7 +249,7 @@ function renderFinale(room) {
 }
 
 // =============================================
-// ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ — викликається polling'ом
+// ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
 // =============================================
 function renderRoom(room) {
   switch (room.status) {
@@ -257,16 +257,13 @@ function renderRoom(room) {
     case 'starting':
       renderLobby(room);
       break;
-
     case 'playing':
       renderGame(room);
       break;
-
     case 'voting':
       hasVoted = !!room.votes?.[myId];
       renderVoteScreen(room);
       break;
-
     case 'ended':
       renderFinale(room);
       break;

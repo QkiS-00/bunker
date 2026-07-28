@@ -35,38 +35,50 @@ function renderLobby(room) {
 // =============================================
 // ЕКРАН 3: КАРТКА ГРАВЦЯ
 // =============================================
-function renderMyCard(me) {
+function renderMyCard(me, round) {
   const container = document.getElementById('myCardContent');
   container.innerHTML = '';
 
-  // Захист від null з Firebase
   if (!me.card) {
     container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">Картка не знайдена</div>';
     return;
   }
 
   const revealed = me.revealed || [];
+  // Скільки вже розкрито в цьому раунді — порівнюємо з номером раунду
+  const canReveal = revealed.length < round;
 
   ATTR_KEYS.forEach(key => {
     const isRevealed = revealed.includes(key);
     const row = document.createElement('div');
     row.className = 'attr-row';
+
     if (isRevealed) {
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
         <span style="font-size:11px;color:var(--text-dim);">✓ відкрито</span>
       `;
-    } else {
+    } else if (canReveal) {
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
         <button class="reveal-btn" onclick="revealAttr('${key}')">Розкрити</button>
       `;
+    } else {
+      // Ліміт раунду вичерпано — кнопка заблокована
+      row.innerHTML = `
+        <span class="attr-label">${ATTR_LABELS[key]}</span>
+        <span class="attr-value" style="color:var(--text-dim);">???</span>
+        <span style="font-size:11px;color:var(--border);">закрито</span>
+      `;
     }
     container.appendChild(row);
   });
 }
+    container.appendChild(row);
+  
+
 
 function renderOthers(players) {
   const container = document.getElementById('othersContent');
@@ -113,7 +125,7 @@ function renderGame(room) {
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
 
   const me = room.players.find(p => p.id === myId);
-  if (me && me.card) renderMyCard(me);
+if (me && me.card) renderMyCard(me, room.round);
 
   renderOthers(room.players);
 

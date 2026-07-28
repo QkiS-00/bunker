@@ -7,6 +7,7 @@ function pick(arr) {
 
 function generateCard() {
   return {
+    genderAge:    pick(DATA.genderAge),
     profession:   pick(DATA.professions),
     health:       pick(DATA.health),
     hobby:        pick(DATA.hobbies),

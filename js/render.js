@@ -140,20 +140,16 @@ function renderVoteScreen(room) {
   showScreen('voteScreen');
 
   const list        = document.getElementById('voteList');
-  const totalVoters = room.players.filter(p => p.alive).length;
-  const votedCount  = Object.keys(room.votes || {}).length;
+  const alivePlayers = room.players.filter(p => p.alive);
+  const totalVoters  = alivePlayers.length;
+  const votedCount   = Object.keys(room.votes || {}).length;
 
   document.getElementById('voteCountDisplay').textContent = votedCount;
   document.getElementById('voteTotalDisplay').textContent = totalVoters;
 
   list.innerHTML = '';
 
-  // Якщо є нічия — показуємо тільки гравців з нічиєї
-  const candidates = room.tieIds
-    ? room.players.filter(p => room.tieIds.includes(p.id))
-    : room.players.filter(p => p.alive && p.id !== myId);
-
-  // Якщо нічия — показуємо повідомлення
+  // Повідомлення про нічию
   if (room.tieIds) {
     const notice = document.createElement('div');
     notice.style.cssText = 'color:var(--rust-light);font-size:12px;margin-bottom:14px;letter-spacing:1px;';
@@ -161,27 +157,66 @@ function renderVoteScreen(room) {
     list.appendChild(notice);
   }
 
-  candidates.forEach(p => {
-    const voteCount = Object.values(room.votes || {}).filter(v => v === p.id).length;
-    const row = document.createElement('div');
-    row.className = 'vote-player-row';
-    row.innerHTML = `
-      <span>${p.name}</span>
-      <span class="vote-count">${voteCount} 🗳</span>
-      <button class="vote-btn" ${hasVoted ? 'disabled' : ''} onclick="castVote('${p.id}')">
-        Вигнати
+  const myVote   = room.votes?.[myId];
+  const iVoted   = !!myVote;
+
+  // Ліміт скіпів
+  const totalPlayers = room.players.length;
+  const skipLimit    = getSkipLimit(totalPlayers);
+  const skipsUsed    = room.skipsUsed || 0;
+  const skipsLeft    = skipLimit - skipsUsed;
+  const skipBlocked  = skipsLeft <= 0;
+
+  const skipCount  = Object.values(room.votes || {}).filter(v => v === 'skip').length;
+  const mySkipped  = myVote === 'skip';
+
+  const skipRow = document.createElement('div');
+  skipRow.style.cssText = 'margin-top:14px;padding-top:14px;border-top:1px solid var(--border);';
+
+  if (skipBlocked) {
+    // Ліміт вичерпано — показуємо повідомлення
+    skipRow.innerHTML = `
+      <div style="color:var(--blood);font-size:12px;text-align:center;letter-spacing:1px;">
+        ⛔ Ліміт скіпів вичерпано (${skipsUsed}/${skipLimit})
+      </div>
+    `;
+  } else {
+    skipRow.innerHTML = `
+      <button class="secondary"
+        style="font-size:12px;padding:10px;${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
+        ${iVoted ? 'disabled' : ''}
+        onclick="castVote('skip')">
+        ${mySkipped
+          ? '✓ Ви пропустили'
+          : `Пропустити (${skipCount} | залишилось скіпів: ${skipsLeft})`}
       </button>
     `;
-    list.appendChild(row);
-  });
+  }
+  list.appendChild(skipRow);
 
-  // Якщо всі проголосували — хост може підвести підсумок
+  // Кнопка "Пропустити" — окремо під списком
+  const skipCount = Object.values(room.votes || {}).filter(v => v === 'skip').length;
+  const mySkipped = myVote === 'skip';
+
+  const skipRow = document.createElement('div');
+  skipRow.style.cssText = 'margin-top:14px;padding-top:14px;border-top:1px solid var(--border);';
+  skipRow.innerHTML = `
+    <button class="secondary"
+      style="font-size:12px;padding:10px;${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
+      ${iVoted ? 'disabled' : ''}
+      onclick="castVote('skip')">
+      ${mySkipped ? '✓ Ви пропустили' : `Пропустити голосування (${skipCount})`}
+    </button>
+  `;
+  list.appendChild(skipRow);
+
+  // Хост бачить кнопку підсумку коли всі проголосували
   const nextBtn     = document.getElementById('nextRoundBtn');
   const resultPanel = document.getElementById('voteResultPanel');
 
   if (votedCount >= totalVoters && room.hostId === myId) {
-    nextBtn.style.display       = 'block';
-    resultPanel.style.display   = 'block';
+    nextBtn.style.display     = 'block';
+    resultPanel.style.display = 'block';
     document.getElementById('voteResultText').textContent =
       'Всі проголосували. Натисніть щоб підвести підсумок.';
   } else {

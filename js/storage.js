@@ -61,6 +61,7 @@ async function createRoom(hostName) {
     votes:       {},
     votingOpen:  false,
     tieIds:      null,
+    skipsUsed:   0, 
     log:         [],
     finale:      null,
     createdAt:   Date.now()

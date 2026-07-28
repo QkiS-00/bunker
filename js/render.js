@@ -39,16 +39,23 @@ function renderMyCard(me) {
   const container = document.getElementById('myCardContent');
   container.innerHTML = '';
 
+  // Захист від null з Firebase
+  if (!me.card) {
+    container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">Картка не знайдена</div>';
+    return;
+  }
+
+  const revealed = me.revealed || [];
+
   ATTR_KEYS.forEach(key => {
-    const isRevealed = me.revealed.includes(key);
+    const isRevealed = revealed.includes(key);
     const row = document.createElement('div');
     row.className = 'attr-row';
-
     if (isRevealed) {
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
-        <span style="font-size:11px;color:var(--text-dim);">✓ розкрито</span>
+        <span style="font-size:11px;color:var(--text-dim);">✓ відкрито</span>
       `;
     } else {
       row.innerHTML = `
@@ -76,16 +83,15 @@ function renderOthers(players) {
     const block = document.createElement('div');
     block.className = 'other-player';
 
-    const deadTag = !p.alive
-      ? '<span class="dead-tag">☠ вибув</span>'
-      : '';
+    const deadTag = !p.alive ? '<span class="dead-tag">☠ вибув</span>' : '';
+    const revealed = p.revealed || []; // захист від null
 
     let html = `<div class="other-player-name">${p.name}${deadTag}</div>`;
 
-    if (!p.revealed.length) {
+    if (!revealed.length) {
       html += '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">Ще нічого не розкрив</div>';
     } else {
-      p.revealed.forEach(key => {
+      revealed.forEach(key => {
         html += `
           <div class="attr-row">
             <span class="attr-label">${ATTR_LABELS[key]}</span>

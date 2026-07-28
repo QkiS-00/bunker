@@ -36,11 +36,17 @@ async function revealAttr(attrKey) {
   const room = await fetchRoom();
   if (!room) return;
   const me = room.players.find(p => p.id === myId);
-  if (!me || me.revealed.includes(attrKey)) return;
+  if (!me || !me.card) return;
+
+  // Захист від null з Firebase
+  if (!me.revealed) me.revealed = [];
+  if (me.revealed.includes(attrKey)) return;
+
   me.revealed.push(attrKey);
   await saveRoom(room);
   renderRoom(room);
 }
+
 
 // =============================================
 // ГОЛОСУВАННЯ

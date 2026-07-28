@@ -1,11 +1,19 @@
 // =============================================
-// ГЕНЕРАЦІЯ ПЕРСОНАЖІВ
+// ДОПОМІЖНІ ФУНКЦІЇ
 // =============================================
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 function getSkipLimit(playerCount) {
   if (playerCount < 9)  return 2;
   if (playerCount <= 13) return 3;
   return 4;
 }
+
+// =============================================
+// ГЕНЕРАЦІЯ ПЕРСОНАЖІВ
+// =============================================
 function generateCard() {
   return {
     genderAge:    pick(DATA.genderAge),
@@ -18,6 +26,7 @@ function generateCard() {
     specialSkill: pick(DATA.specialSkill)
   };
 }
+
 
 function dealCards(room) {
   room.players.forEach(p => {

@@ -73,7 +73,7 @@ function renderMyCard(me, round) {
         <span style="font-size:11px;color:var(--border);">закрито</span>
       `;
     }
-    container.appendChild(row);
+
   });
 }
     container.appendChild(row);

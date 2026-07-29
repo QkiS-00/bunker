@@ -119,13 +119,29 @@ function renderGame(room) {
   document.getElementById('catastropheDisplay').textContent = room.catastrophe;
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
 
-  const me = room.players.find(p => p.id === myId);
-  if (me && me.card) renderMyCard(me, room.round);
+  const me        = room.players.find(p => p.id === myId);
+  const imEliminated = me && !me.alive;
+
+  // Якщо вибутий — показуємо плашку спостерігача
+  const myCardPanel = document.getElementById('myCardPanel');
+  if (imEliminated) {
+    myCardPanel.innerHTML = `
+      <div class="panel-label">Ваша картка</div>
+      <div style="color:var(--blood);font-size:13px;text-align:center;padding:16px 0;letter-spacing:1px;">
+        ☠ Ви вибули. Спостерігайте за грою.
+      </div>
+    `;
+  } else {
+    myCardPanel.innerHTML = '<div class="panel-label">Ваша картка</div><div id="myCardContent"></div>';
+    const freshMe = room.players.find(p => p.id === myId);
+    if (freshMe && freshMe.card) renderMyCard(freshMe, room.round);
+  }
 
   renderOthers(room.players);
 
-  document.getElementById('startVoteBtn').style.display =
-    room.hostId === myId ? 'block' : 'none';
+  // Кнопка голосування тільки для хоста і тільки якщо він живий
+  const voteBtn = document.getElementById('startVoteBtn');
+  voteBtn.style.display = (room.hostId === myId && !imEliminated) ? 'block' : 'none';
 }
 
 // =============================================
@@ -142,7 +158,12 @@ function renderVoteScreen(room) {
   document.getElementById('voteCountDisplay').textContent = votedCount;
   document.getElementById('voteTotalDisplay').textContent = totalVoters;
 
-  list.innerHTML = '';
+  list.innerHTML = '';   if (imEliminated) {
+    const obs = document.createElement('div');
+    obs.style.cssText = 'color:var(--blood);font-size:12px;text-align:center;margin-bottom:14px;letter-spacing:1px;';
+    obs.textContent = '☠ Ви вибули — ви спостерігач і не можете голосувати';
+    list.appendChild(obs);
+  }
 
   // Повідомлення про нічию
   if (room.tieIds) {
@@ -152,8 +173,10 @@ function renderVoteScreen(room) {
     list.appendChild(notice);
   }
 
-  const myVote = room.votes?.[myId];
-  const iVoted = !!myVote;
+  const me           = room.players.find(p => p.id === myId);
+  const imEliminated = me && !me.alive;
+  const myVote       = room.votes?.[myId];
+  const iVoted       = !!myVote || imEliminated; // вибутий теж не голосує
 
   // Список кандидатів
   const candidates = room.tieIds

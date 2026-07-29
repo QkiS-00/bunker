@@ -41,6 +41,18 @@ document.getElementById('startGameBtn').addEventListener('click', async () => {
 document.getElementById('startVoteBtn').addEventListener('click', async () => {
   const room = await fetchRoom();
   if (!room) return;
+
+  // Перевірка що живих більше ніж місткість бункера
+  const alivePlayers = room.players.filter(p => p.alive);
+  if (alivePlayers.length <= room.capacity) {
+    alert('Гравців вже достатньо мало — гра завершена!');
+    room.status = 'ended';
+    await saveRoom(room);
+    renderRoom(room);
+    generateFinale(room);
+    return;
+  }
+
   room.status     = 'voting';
   room.votingOpen = true;
   room.votes      = {};

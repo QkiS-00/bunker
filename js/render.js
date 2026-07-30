@@ -1,6 +1,9 @@
 function showScreen(id) {
-  ['landingScreen','lobbyScreen','gameScreen','voteScreen','finaleScreen']
-    .forEach(s => document.getElementById(s).style.display = 'none');
+  ['landingScreen', 'lobbyScreen', 'gameScreen', 'finaleScreen']
+    .forEach(s => {
+      const el = document.getElementById(s);
+      if (el) el.style.display = 'none';
+    });
   document.getElementById(id).style.display = 'block';
 }
 

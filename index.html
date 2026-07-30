@@ -41,7 +41,7 @@
   <!-- ЕКРАН 2: Лобі -->
   <div class="wrap" id="lobbyScreen" style="display:none;">
     <div class="title" style="font-size:34px;">
-      КІМНАТА <span id="roomCodeDisplay"></span>
+      КІМНАТА <span id="roomCodeDisplay" style="cursor:pointer;" title="Натисніть щоб скопіювати"></span>
     </div>
     <div class="subtitle">очікування гравців</div>
 
@@ -62,7 +62,7 @@
     </div>
   </div>
 
-  <!-- ЕКРАН 3: Гра -->
+  <!-- ЕКРАН 3: Гра + Голосування (один екран) -->
   <div class="wrap" id="gameScreen" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <div class="title" style="font-size:28px;">БУНКЕР</div>
@@ -78,46 +78,34 @@
       🏠 <span id="bunkerDisplay"></span>
     </div>
 
+    <!-- Своя картка -->
     <div class="panel" id="myCardPanel">
       <div class="panel-label">Ваша картка</div>
       <div id="myCardContent"></div>
     </div>
 
+    <!-- Всі гравці + голосування -->
     <div class="panel">
-      <div class="panel-label">Інші гравці</div>
+      <div class="panel-label">Гравці</div>
       <div id="othersContent"></div>
     </div>
 
-    <button id="startVoteBtn" style="display:none;margin-top:12px;">
-      Почати голосування
-    </button>
-  </div>
-
-  <!-- ЕКРАН 4: Голосування -->
-  <div class="wrap" id="voteScreen" style="display:none;">
-    <div class="title" style="font-size:28px;margin-bottom:6px;">ГОЛОСУВАННЯ</div>
-    <div class="subtitle" style="margin-bottom:24px;">хто покидає бункер?</div>
-
-    <div class="panel">
-      <div class="panel-label">Проголосуйте</div>
-      <div id="voteList"></div>
-    </div>
-
-    <div style="color:var(--text-dim);font-size:12px;text-align:center;margin-top:8px;">
-      Проголосували: <span id="voteCountDisplay">0</span> / <span id="voteTotalDisplay">0</span>
-    </div>
-
-    <div class="panel" style="margin-top:18px;display:none;" id="voteResultPanel">
+    <!-- Результат голосування (тільки хост бачить) -->
+    <div class="panel" style="display:none;" id="voteResultPanel">
       <div class="panel-label">Результат</div>
       <div id="voteResultText"></div>
     </div>
 
+    <!-- Кнопки -->
+    <button id="startVoteBtn" style="display:none;margin-top:12px;">
+      Почати голосування
+    </button>
     <button id="nextRoundBtn" style="display:none;margin-top:12px;">
-      Наступний раунд
+      Підвести підсумок
     </button>
   </div>
 
-  <!-- ЕКРАН 5: Фінал -->
+  <!-- ЕКРАН 4: Фінал -->
   <div class="wrap" id="finaleScreen" style="display:none;">
     <div class="title" style="font-size:34px;margin-bottom:6px;">ВИЖИЛИ</div>
     <div class="subtitle" style="margin-bottom:24px;">історія бункера</div>

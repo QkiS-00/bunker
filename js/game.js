@@ -83,8 +83,13 @@ async function closeVoting(room) {
     tally[targetId] = (tally[targetId] || 0) + 1;
   });
 
-  // Додаємо скіпи до лічильника
-  room.skipsUsed = (room.skipsUsed || 0) + roundSkips;
+// Рахуємо скіпи цього раунду по кожному гравцю окремо
+  if (!room.skipsUsed) room.skipsUsed = {};
+  Object.entries(votes).forEach(([voterId, targetId]) => {
+    if (targetId === 'skip') {
+      room.skipsUsed[voterId] = (room.skipsUsed[voterId] || 0) + 1;
+    }
+  });
 
   // Якщо всі пропустили
   if (Object.keys(tally).length === 0) {
@@ -128,6 +133,7 @@ async function closeVoting(room) {
   const eliminatedId = topIds[0];
   const eliminated   = room.players.find(p => p.id === eliminatedId);
   if (eliminated) eliminated.alive = false;
+    eliminated.revealed = [...ATTR_KEYS];
 
   room.votingOpen = false;
   room.votes      = {};

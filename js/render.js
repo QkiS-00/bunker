@@ -232,8 +232,8 @@ function renderGame(room) {
   // Скіп
   if (isVoting && !imEliminated) {
     const skipLimit   = getSkipLimit(room.players.length);
-    const skipsUsed   = room.skipsUsed || 0;
-    const skipsLeft   = skipLimit - skipsUsed;
+    const mySkipsUsed = (room.skipsUsed && room.skipsUsed[myId]) || 0;
+    const skipsLeft   = skipLimit - mySkipsUsed;
     const skipBlocked = skipsLeft <= 0;
     const skipCount   = Object.values(votes).filter(v => v === 'skip').length;
     const mySkipped   = myVote === 'skip';
@@ -244,7 +244,7 @@ function renderGame(room) {
     if (skipBlocked) {
       skipRow.innerHTML = `
         <div style="color:var(--blood);font-size:12px;text-align:center;letter-spacing:1px;">
-          ⛔ Ліміт скіпів вичерпано (${skipsUsed}/${skipLimit})
+          ⛔ Ви вичерпали свої скіпи (${mySkipsUsed}/${skipLimit})
         </div>`;
     } else {
       skipRow.innerHTML = `
@@ -252,8 +252,8 @@ function renderGame(room) {
           ${iVoted ? 'disabled' : ''}
           onclick="castVote('skip')">
           ${mySkipped
-            ? `✓ Ви пропустили (${skipCount} пропустили)`
-            : `Пропустити (${skipCount} пропустили | залишилось: ${skipsLeft}/${skipLimit})`}
+            ? `✓ Ви пропустили (у вас ще ${skipsLeft - 1}/${skipLimit})`
+            : `Пропустити (у вас залишилось: ${skipsLeft}/${skipLimit})`}
         </button>`;
     }
     othersContainer.appendChild(skipRow);

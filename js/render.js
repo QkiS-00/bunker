@@ -34,7 +34,7 @@ function renderLobby(room) {
 // =============================================
 // СВОЯ КАРТКА
 // =============================================
-function renderMyCard(me, round) {
+function renderMyCard(me, round, playerCount) {
   const container = document.getElementById('myCardContent');
   container.innerHTML = '';
 
@@ -44,9 +44,16 @@ function renderMyCard(me, round) {
   }
 
   const revealed  = me.revealed || [];
-  const canReveal = revealed.length < round;
-
+const totalPlayers  = room ? room.players.length : 10;
+const revealPerRound = totalPlayers < 10 && round === 1 ? 2 : 1;
+  const revealLimit = (playerCount < 10 && round === 1) ? 2 : round;
+  const canReveal   = revealed.length < revealLimit;
   const hint = document.createElement('div');
+  hint.textContent = canReveal
+    ? `▶ Можете розкрити ще ${revealLimit - revealed.length} атрибут(и)`
+    : `✓ Ліміт розкриття на цей раунд вичерпано`;
+
+    
   hint.style.cssText = 'font-size:11px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;';
   hint.textContent = canReveal
     ? `▶ Можете розкрити ще ${round - revealed.length} атрибут(и)`

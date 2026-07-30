@@ -34,6 +34,8 @@ function renderLobby(room) {
 
 // =============================================
 // ЕКРАН 3: КАРТКА ГРАВЦЯ
+// Гравець завжди бачить ВСІ свої значення.
+// Розкриті — зі значком ✓, нерозкриті — з кнопкою або заблоковані.
 // =============================================
 function renderMyCard(me, round) {
   const container = document.getElementById('myCardContent');
@@ -47,28 +49,41 @@ function renderMyCard(me, round) {
   const revealed  = me.revealed || [];
   const canReveal = revealed.length < round;
 
+  // Підказка скільки можна ще розкрити
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:11px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;';
+  if (canReveal) {
+    hint.textContent = `▶ Можете розкрити ще ${round - revealed.length} атрибут(и) в цьому раунді`;
+  } else {
+    hint.textContent = `✓ Ліміт розкриття на цей раунд вичерпано`;
+  }
+  container.appendChild(hint);
+
   ATTR_KEYS.forEach(key => {
     const isRevealed = revealed.includes(key);
     const row = document.createElement('div');
     row.className = 'attr-row';
 
     if (isRevealed) {
+      // Розкрито — всі бачать це значення
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
-        <span style="font-size:11px;color:var(--text-dim);">✓ відкрито</span>
+        <span style="font-size:11px;color:var(--rust-light);white-space:nowrap;">✓ відкрито</span>
       `;
     } else if (canReveal) {
+      // Не розкрито але можна — показуємо значення і кнопку
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
         <button class="reveal-btn" onclick="revealAttr('${key}')">Розкрити</button>
       `;
     } else {
+      // Не розкрито і ліміт — показуємо значення але без кнопки
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
-        <span class="attr-value" style="color:var(--text-dim);">???</span>
-        <span style="font-size:11px;color:var(--border);">закрито</span>
+        <span class="attr-value" style="color:var(--text-dim);">${me.card[key]}</span>
+        <span style="font-size:11px;color:var(--border);white-space:nowrap;">🔒 закрито</span>
       `;
     }
     container.appendChild(row);
@@ -76,7 +91,7 @@ function renderMyCard(me, round) {
 }
 
 // =============================================
-// ІНШІ ГРАВЦІ
+// ІНШІ ГРАВЦІ — тільки розкриті атрибути
 // =============================================
 function renderOthers(players) {
   const container = document.getElementById('othersContent');
@@ -140,12 +155,22 @@ function renderGame(room) {
   const myCardPanel = document.getElementById('myCardPanel');
 
   if (imEliminated) {
-    myCardPanel.innerHTML = `
-      <div class="panel-label">Ваша картка</div>
-      <div style="color:var(--blood);font-size:13px;text-align:center;padding:16px 0;letter-spacing:1px;">
-        ☠ Ви вибули. Спостерігайте за грою.
-      </div>
-    `;
+    // Вибутий бачить свою картку повністю але без кнопок
+    let html = '<div class="panel-label">Ваша картка</div>';
+    html += `<div style="color:var(--blood);font-size:12px;text-align:center;padding:8px 0 14px;letter-spacing:1px;">☠ Ви вибули — спостерігайте за грою</div>`;
+    if (me && me.card) {
+      const revealed = me.revealed || [];
+      ATTR_KEYS.forEach(key => {
+        const isRevealed = revealed.includes(key);
+        html += `
+          <div class="attr-row">
+            <span class="attr-label">${ATTR_LABELS[key]}</span>
+            <span class="attr-value" style="${isRevealed ? '' : 'color:var(--text-dim);'}">${me.card[key]}</span>
+            ${isRevealed ? '<span style="font-size:11px;color:var(--rust-light);">✓</span>' : '<span style="font-size:11px;color:var(--border);">🔒</span>'}
+          </div>`;
+      });
+    }
+    myCardPanel.innerHTML = html;
   } else {
     myCardPanel.innerHTML = '<div class="panel-label">Ваша картка</div><div id="myCardContent"></div>';
     if (me && me.card) renderMyCard(me, room.round);
@@ -159,13 +184,15 @@ function renderGame(room) {
 
 // =============================================
 // ЕКРАН 4: ГОЛОСУВАННЯ
+// Голоси оновлюються в реальному часі через polling
 // =============================================
 function renderVoteScreen(room) {
   showScreen('voteScreen');
 
   const alivePlayers = room.players.filter(p => p.alive);
   const totalVoters  = alivePlayers.length;
-  const votedCount   = Object.keys(room.votes || {}).length;
+  const votes        = room.votes || {};
+  const votedCount   = Object.keys(votes).length;
 
   document.getElementById('voteCountDisplay').textContent = votedCount;
   document.getElementById('voteTotalDisplay').textContent = totalVoters;
@@ -175,7 +202,7 @@ function renderVoteScreen(room) {
 
   const me           = room.players.find(p => p.id === myId);
   const imEliminated = me && !me.alive;
-  const myVote       = room.votes?.[myId];
+  const myVote       = votes[myId];
   const iVoted       = !!myVote || imEliminated;
 
   // Плашка спостерігача
@@ -194,7 +221,7 @@ function renderVoteScreen(room) {
     list.appendChild(notice);
   }
 
-  // Кандидати
+  // Кандидати з кількістю голосів в реальному часі
   const candidates = room.tieIds
     ? room.players.filter(p => room.tieIds.includes(p.id))
     : room.players.filter(p => p.alive && p.id !== myId);
@@ -206,16 +233,35 @@ function renderVoteScreen(room) {
     list.appendChild(empty);
   }
 
+  // Максимум голосів для підсвітки лідера
+  const maxCount = candidates.reduce((max, p) => {
+    const count = Object.values(votes).filter(v => v === p.id).length;
+    return count > max ? count : max;
+  }, 0);
+
   candidates.forEach(p => {
-    const voteCount  = Object.values(room.votes || {}).filter(v => v === p.id).length;
+    const voteCount  = Object.values(votes).filter(v => v === p.id).length;
     const isMyChoice = myVote === p.id;
+    const isLeading  = voteCount > 0 && voteCount === maxCount;
     const row        = document.createElement('div');
     row.className    = 'vote-player-row';
-    row.innerHTML    = `
-      <span style="flex:1;">${p.name}</span>
-      <span class="vote-count">${voteCount} 🗳</span>
+
+    // Прогрес-бар голосів
+    const pct = totalVoters > 0 ? Math.round((voteCount / totalVoters) * 100) : 0;
+    const barColor = isLeading ? 'var(--blood)' : 'var(--border)';
+
+    row.innerHTML = `
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span>${p.name}</span>
+          <span class="vote-count" style="${isLeading ? 'color:var(--blood);' : ''}">${voteCount} 🗳</span>
+        </div>
+        <div style="height:3px;background:var(--border);border-radius:2px;">
+          <div style="height:3px;width:${pct}%;background:${barColor};border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>
       <button class="vote-btn"
-        style="${isMyChoice ? 'background:var(--rust);color:#100b08;' : ''}"
+        style="margin-left:12px;${isMyChoice ? 'background:var(--rust);color:#100b08;' : ''}"
         ${iVoted ? 'disabled' : ''}
         onclick="castVote('${p.id}')">
         ${isMyChoice ? '✓ Ваш вибір' : 'Вигнати'}
@@ -224,13 +270,13 @@ function renderVoteScreen(room) {
     list.appendChild(row);
   });
 
-  // Кнопка скіп — тільки для живих
+  // Скіп — тільки для живих
   if (!imEliminated) {
     const skipLimit   = getSkipLimit(room.players.length);
     const skipsUsed   = room.skipsUsed || 0;
     const skipsLeft   = skipLimit - skipsUsed;
     const skipBlocked = skipsLeft <= 0;
-    const skipCount   = Object.values(room.votes || {}).filter(v => v === 'skip').length;
+    const skipCount   = Object.values(votes).filter(v => v === 'skip').length;
     const mySkipped   = myVote === 'skip';
 
     const skipRow = document.createElement('div');
@@ -249,8 +295,8 @@ function renderVoteScreen(room) {
           ${iVoted ? 'disabled' : ''}
           onclick="castVote('skip')">
           ${mySkipped
-            ? '✓ Ви пропустили'
-            : `Пропустити (${skipCount} | залишилось: ${skipsLeft}/${skipLimit})`}
+            ? `✓ Ви пропустили (${skipCount} пропустили)`
+            : `Пропустити (${skipCount} пропустили | залишилось: ${skipsLeft}/${skipLimit})`}
         </button>
       `;
     }

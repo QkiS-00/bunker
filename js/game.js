@@ -73,6 +73,8 @@ async function closeVoting(room) {
   const totalPlayers = room.players.length;
   const skipLimit    = getSkipLimit(totalPlayers);
   const roundSkips   = Object.values(votes).filter(v => v === 'skip').length;
+   if (!room.log)     room.log = [];
+  if (!room.tieIds)  room.tieIds = null;
 
   // Рахуємо реальні голоси
   const tally = {};

@@ -289,17 +289,104 @@ function renderFinale(room) {
   const survivors = room.players.filter(p => p.alive);
   const list      = document.getElementById('survivorsList');
 
-  list.innerHTML = survivors.map(p => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--border);">
-      <span style="color:var(--rust-light);">${p.name}</span>
-      <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${p.card.profession}</span>
+  // Катастрофа і бункер
+  list.innerHTML = `
+    <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
+      <div style="color:var(--text);font-size:14px;">${room.catastrophe}</div>
     </div>
-  `).join('');
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
+      <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
+    </div>
+    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Виживші</div>
+  `;
+
+  // Кожен виживший з розкладкою
+  survivors.forEach((p, i) => {
+    const cardId = 'card_' + i;
+    const card   = p.card || {};
+
+    const playerEl = document.createElement('div');
+    playerEl.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--rust);';
+
+    // Шапка — клікабельна
+    playerEl.innerHTML = `
+      <div onclick="toggleCard('${cardId}')"
+        style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+        <div>
+          <span style="color:var(--rust-light);font-size:14px;">${p.name}</span>
+          <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
+        </div>
+        <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;transition:transform 0.2s;">▶</span>
+      </div>
+
+      <div id="${cardId}" style="display:none;padding:0 14px 14px;">
+        ${ATTR_KEYS.map(key => `
+          <div class="attr-row">
+            <span class="attr-label">${ATTR_LABELS[key]}</span>
+            <span class="attr-value">${card[key] || '—'}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    list.appendChild(playerEl);
+  });
+
+  // Вибулі теж показуємо
+  const eliminated = room.players.filter(p => !p.alive);
+  if (eliminated.length) {
+    const elimTitle = document.createElement('div');
+    elimTitle.style.cssText = 'color:var(--blood);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:20px 0 12px;';
+    elimTitle.textContent = '☠ Вибули';
+    list.appendChild(elimTitle);
+
+    eliminated.forEach((p, i) => {
+      const cardId = 'elim_' + i;
+      const card   = p.card || {};
+
+      const playerEl = document.createElement('div');
+      playerEl.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--blood);opacity:0.7;';
+
+      playerEl.innerHTML = `
+        <div onclick="toggleCard('${cardId}')"
+          style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+          <div>
+            <span style="color:var(--blood);font-size:14px;">${p.name}</span>
+            <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
+            <span style="color:var(--blood);font-size:11px;margin-left:6px;">☠</span>
+          </div>
+          <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
+        </div>
+
+        <div id="${cardId}" style="display:none;padding:0 14px 14px;">
+          ${ATTR_KEYS.map(key => `
+            <div class="attr-row">
+              <span class="attr-label">${ATTR_LABELS[key]}</span>
+              <span class="attr-value">${card[key] || '—'}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      list.appendChild(playerEl);
+    });
+  }
 
   document.getElementById('finaleText').textContent =
     room.finale || 'Генеруємо історію...';
 }
 
+// Функція розкриття картки на фіналі
+function toggleCard(cardId) {
+  const el    = document.getElementById(cardId);
+  const arrow = document.getElementById('arrow_' + cardId);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display    = isOpen ? 'none' : 'block';
+  arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
 // =============================================
 // ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
 // =============================================

@@ -78,3 +78,13 @@ document.getElementById('roomCodeDisplay').addEventListener('click', () => {
     setTimeout(() => el.textContent = original, 1500);
   });
 });
+// =============================================
+// РЕКОНЕКТ ПРИ ЗАВАНТАЖЕННІ
+// =============================================
+window.addEventListener('load', async () => {
+  const reconnected = await tryReconnect();
+  if (!reconnected) {
+    // Показуємо стартовий екран
+    document.getElementById('landingScreen').style.display = 'block';
+  }
+});

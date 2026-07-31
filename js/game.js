@@ -23,7 +23,10 @@ function generateCard() {
     phobia:       pick(DATA.phobias),
     luggage:      pick(DATA.luggage),
     bioFact:      pick(DATA.bioFact),
-    specialSkill: pick(DATA.specialSkill)
+    specialSkill: pick(DATA.specialSkill),
+    // 20% шанс отримати здібність
+    ability:      Math.random() < 0.2 ? pick(ABILITIES) : null,
+    abilityUsed:  false
   };
 }
 
@@ -32,10 +35,11 @@ function dealCards(room) {
     p.card     = generateCard();
     p.revealed = [];
   });
-  room.catastrophe = pick(DATA.catastrophe);
-  room.bunker      = pick(DATA.bunker);
-  room.status      = 'playing';
-  room.round       = 1;
+  room.catastrophe   = pick(DATA.catastrophe);
+  room.bunker        = pick(DATA.bunker);
+  room.status        = 'playing';
+  room.round         = 1;
+  room.immunePlayers = [];
   return room;
 }
 
@@ -55,12 +59,164 @@ async function revealAttr(attrKey) {
 }
 
 // =============================================
+// ЗДІБНОСТІ
+// =============================================
+
+// Стан для шпигунства (двокроковий вибір)
+let spyState = null; // { targetId, ability }
+
+async function useAbility(targetId, attrKey) {
+  const room = await fetchRoom();
+  if (!room) return;
+  if (!room.log)           room.log = [];
+  if (!room.immunePlayers) room.immunePlayers = [];
+
+  const me = room.players.find(p => p.id === myId);
+  if (!me || !me.card || !me.card.ability || me.card.abilityUsed) return;
+
+  const ability = me.card.ability;
+
+  // --- Заміна атрибуту ---
+  if (ability.type === 'replace_attr') {
+    const target = room.players.find(p => p.id === targetId);
+    if (!target || !target.card) return;
+
+    const dataKey  = ATTR_TO_DATA[ability.attr];
+    const oldValue = target.card[ability.attr];
+    const newValue = pick(DATA[dataKey]);
+
+    target.card[ability.attr] = newValue;
+    me.card.abilityUsed = true;
+
+    room.log.push(
+      `[Здібність] ${me.name} → "${ability.name}": ` +
+      `у ${target.name} змінено ${ATTR_LABELS[ability.attr]} ` +
+      `("${oldValue}" → "${newValue}")`
+    );
+
+    await saveRoom(room);
+    renderRoom(room);
+    return;
+  }
+
+  // --- Імунітет ---
+  if (ability.type === 'immunity') {
+    const target = room.players.find(p => p.id === targetId);
+    if (!target) return;
+
+    if (!room.immunePlayers.includes(target.id)) {
+      room.immunePlayers.push(target.id);
+    }
+    me.card.abilityUsed = true;
+    room.log.push(
+      `[Здібність] ${me.name} → "${ability.name}": ` +
+      `${target.name} отримав імунітет від голосування`
+    );
+
+    await saveRoom(room);
+    renderRoom(room);
+    return;
+  }
+
+  // --- Шпигунство ---
+  if (ability.type === 'spy') {
+    const target = room.players.find(p => p.id === targetId);
+    if (!target || !target.card) return;
+
+    // Для 'one' і 'two' — двокроковий вибір атрибутів
+    if ((ability.attr === 'one' || ability.attr === 'two') && !attrKey) {
+      // Перший крок — показуємо вибір атрибутів
+      spyState = { targetId, ability };
+      renderRoom(room); // перемалює з вибором атрибутів
+      return;
+    }
+
+    // Позначаємо як використану
+    me.card.abilityUsed = true;
+    spyState = null;
+    room.log.push(`[Здібність] ${me.name} використав шпигунську здібність`);
+
+    await saveRoom(room);
+    showSpyModal(target, ability, attrKey);
+    renderRoom(room);
+  }
+}
+
+function showSpyModal(target, ability, attrKey) {
+  const existing = document.getElementById('spyModal');
+  if (existing) existing.remove();
+
+  const card = target.card;
+  let content = '';
+
+  if (ability.attr === 'all') {
+    content = ATTR_KEYS.map(key => `
+      <div class="attr-row">
+        <span class="attr-label">${ATTR_LABELS[key]}</span>
+        <span class="attr-value">${card[key] || '—'}</span>
+      </div>`).join('');
+
+  } else if (ability.attr === 'one') {
+    content = `
+      <div class="attr-row">
+        <span class="attr-label">${ATTR_LABELS[attrKey]}</span>
+        <span class="attr-value">${card[attrKey] || '—'}</span>
+      </div>`;
+
+  } else if (ability.attr === 'two') {
+    const keys = attrKey.split(',');
+    content = keys.map(key => `
+      <div class="attr-row">
+        <span class="attr-label">${ATTR_LABELS[key]}</span>
+        <span class="attr-value">${card[key] || '—'}</span>
+      </div>`).join('');
+
+  } else {
+    content = `
+      <div class="attr-row">
+        <span class="attr-label">${ATTR_LABELS[ability.attr]}</span>
+        <span class="attr-value">${card[ability.attr] || '—'}</span>
+      </div>`;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'spyModal';
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.88);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--rust);
+      border-left:3px solid var(--rust-light);padding:24px;max-width:420px;width:100%;">
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:4px;">🔍 Шпигунство</div>
+      <div style="color:var(--text-dim);font-size:12px;margin-bottom:16px;">
+        Інформація про <b style="color:var(--text);">${target.name}</b> — тільки ви це бачите
+      </div>
+      ${content}
+      <button onclick="document.getElementById('spyModal').remove()"
+        style="margin-top:16px;">ОК, зрозумів</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// =============================================
 // ГОЛОСУВАННЯ
 // =============================================
 async function castVote(targetId) {
   if (hasVoted) return;
   const room = await fetchRoom();
   if (!room || !room.votingOpen) return;
+
+  // Перевірка імунітету
+  const immunePlayers = room.immunePlayers || [];
+  if (immunePlayers.includes(targetId) && targetId !== 'skip') {
+    alert('Цей гравець має імунітет! Оберіть іншого.');
+    return;
+  }
+
   if (!room.votes) room.votes = {};
   room.votes[myId] = targetId;
   hasVoted = true;
@@ -73,17 +229,18 @@ async function closeVoting(room) {
   const totalPlayers = room.players.length;
   const skipLimit    = getSkipLimit(totalPlayers);
   const roundSkips   = Object.values(votes).filter(v => v === 'skip').length;
-   if (!room.log)     room.log = [];
-  if (!room.tieIds)  room.tieIds = null;
+  if (!room.log)           room.log = [];
+  if (!room.immunePlayers) room.immunePlayers = [];
 
-  // Рахуємо реальні голоси
+  // Рахуємо голоси (без скіпів і без імунних)
   const tally = {};
   Object.entries(votes).forEach(([voterId, targetId]) => {
     if (targetId === 'skip') return;
+    if (room.immunePlayers.includes(targetId)) return; // ігноруємо голоси проти імунних
     tally[targetId] = (tally[targetId] || 0) + 1;
   });
 
-// Рахуємо скіпи цього раунду по кожному гравцю окремо
+  // Скіпи по кожному гравцю
   if (!room.skipsUsed) room.skipsUsed = {};
   Object.entries(votes).forEach(([voterId, targetId]) => {
     if (targetId === 'skip') {
@@ -91,12 +248,15 @@ async function closeVoting(room) {
     }
   });
 
-  // Якщо всі пропустили
+  // Очищаємо імунітет після голосування
+  room.immunePlayers = [];
+
+  // Якщо всі пропустили або всі голоси проти імунних
   if (Object.keys(tally).length === 0) {
     room.votingOpen = false;
     room.votes      = {};
     room.tieIds     = null;
-    room.log.push(`Раунд ${room.round}: всі пропустили (скіпів використано: ${room.skipsUsed}/${skipLimit})`);
+    room.log.push(`Раунд ${room.round}: нікого не вигнали (${roundSkips} пропустили)`);
     room.status = 'playing';
     room.round += 1;
     await saveRoom(room);
@@ -104,7 +264,7 @@ async function closeVoting(room) {
     return;
   }
 
-  // Знаходимо максимум
+  // Максимум голосів
   let maxVotes = 0;
   Object.values(tally).forEach(count => {
     if (count > maxVotes) maxVotes = count;
@@ -114,7 +274,7 @@ async function closeVoting(room) {
     .filter(([id, count]) => count === maxVotes)
     .map(([id]) => id);
 
-  // Нічия — переголосування
+  // Нічия
   if (topIds.length > 1) {
     room.votes      = {};
     room.votingOpen = true;
@@ -129,11 +289,13 @@ async function closeVoting(room) {
     return;
   }
 
-  // Виключення гравця
+  // Виключення
   const eliminatedId = topIds[0];
   const eliminated   = room.players.find(p => p.id === eliminatedId);
-  if (eliminated) eliminated.alive = false;
-    eliminated.revealed = [...ATTR_KEYS];
+  if (eliminated) {
+    eliminated.alive    = false;
+    eliminated.revealed = [...ATTR_KEYS]; // відкриваємо всю картку
+  }
 
   room.votingOpen = false;
   room.votes      = {};

@@ -617,3 +617,63 @@ const ATTR_LABELS = {
 
 // Порядок атрибутів — важливий для відображення
 const ATTR_KEYS = Object.keys(ATTR_LABELS);
+// =============================================
+// ЗДІБНОСТІ
+// =============================================
+const ATTR_TO_DATA = {
+  profession:   'professions',
+  health:       'health',
+  hobby:        'hobbies',
+  phobia:       'phobias',
+  luggage:      'luggage',
+  bioFact:      'bioFact',
+  specialSkill: 'specialSkill'
+};
+
+const ABILITIES = [
+  // Заміна свого атрибуту
+  { name: 'Переквалификация',  type: 'replace_attr', target: 'self',     attr: 'profession'   },
+  { name: 'Курс лечения',      type: 'replace_attr', target: 'self',     attr: 'health'       },
+  { name: 'Смена увлечений',   type: 'replace_attr', target: 'self',     attr: 'hobby'        },
+  { name: 'Психотерапия',      type: 'replace_attr', target: 'self',     attr: 'phobia'       },
+  { name: 'Замена багажа',     type: 'replace_attr', target: 'self',     attr: 'luggage'      },
+  { name: 'Чистый лист',       type: 'replace_attr', target: 'self',     attr: 'bioFact'      },
+  { name: 'Переобучение',      type: 'replace_attr', target: 'self',     attr: 'specialSkill' },
+
+  // Заміна атрибуту сусіда
+  { name: 'Смена работы соседа',    type: 'replace_attr', target: 'neighbor', attr: 'profession'   },
+  { name: 'Медосмотр соседа',       type: 'replace_attr', target: 'neighbor', attr: 'health'       },
+  { name: 'Новое увлечение соседа', type: 'replace_attr', target: 'neighbor', attr: 'hobby'        },
+  { name: 'Сеанс гипноза соседа',   type: 'replace_attr', target: 'neighbor', attr: 'phobia'       },
+  { name: 'Посылка соседу',         type: 'replace_attr', target: 'neighbor', attr: 'luggage'      },
+  { name: 'Пересмотр дела соседа',  type: 'replace_attr', target: 'neighbor', attr: 'bioFact'      },
+  { name: 'Забытый талант соседа',  type: 'replace_attr', target: 'neighbor', attr: 'specialSkill' },
+
+  // Заміна атрибуту будь-якого
+  { name: 'Принудительное переобучение', type: 'replace_attr', target: 'any', attr: 'profession'   },
+  { name: 'Врачебное вмешательство',     type: 'replace_attr', target: 'any', attr: 'health'       },
+  { name: 'Принудительный досуг',        type: 'replace_attr', target: 'any', attr: 'hobby'        },
+  { name: 'Шоковая терапия',             type: 'replace_attr', target: 'any', attr: 'phobia'       },
+  { name: 'Полная инвентаризация',       type: 'replace_attr', target: 'any', attr: 'luggage'      },
+  { name: 'Переписывание истории',       type: 'replace_attr', target: 'any', attr: 'bioFact'      },
+  { name: 'Смена таланта',              type: 'replace_attr', target: 'any', attr: 'specialSkill' },
+
+  // Імунітет
+  { name: 'Личный иммунитет',              type: 'immunity', target: 'self'     },
+  { name: 'Защитный мандат',               type: 'immunity', target: 'self'     },
+  { name: 'Опека соседа',                  type: 'immunity', target: 'neighbor' },
+  { name: 'Защитный купол соседа',         type: 'immunity', target: 'neighbor' },
+  { name: 'Дипломатическая неприкосновенность', type: 'immunity', target: 'any' },
+
+  // Шпигунство
+  { name: 'Тайный шпионаж',       type: 'spy', target: 'any', attr: 'one'         },
+  { name: 'Персональное досье',   type: 'spy', target: 'any', attr: 'all'         },
+  { name: 'Ночной осмотр',        type: 'spy', target: 'any', attr: 'health'      },
+  { name: 'Проверка биографии',   type: 'spy', target: 'any', attr: 'bioFact'     },
+  { name: 'Осмотр карманов',      type: 'spy', target: 'any', attr: 'luggage'     },
+  { name: 'Взгляд со стороны',    type: 'spy', target: 'any', attr: 'phobia'      },
+  { name: 'Тайный аудит',         type: 'spy', target: 'any', attr: 'specialSkill'},
+  { name: 'Проверка квалификации',type: 'spy', target: 'any', attr: 'profession'  },
+  { name: 'Рентген-контроль',     type: 'spy', target: 'any', attr: 'two'         },
+  { name: 'Наблюдение',           type: 'spy', target: 'any', attr: 'hobby'       },
+];

@@ -1,5 +1,5 @@
 function showScreen(id) {
-  ['landingScreen', 'lobbyScreen', 'gameScreen', 'finaleScreen']
+  ['landingScreen','lobbyScreen','gameScreen','finaleScreen']
     .forEach(s => {
       const el = document.getElementById(s);
       if (el) el.style.display = 'none';
@@ -32,31 +32,26 @@ function renderLobby(room) {
 }
 
 // =============================================
-// СВОЯ КАРТКА
+// СВОЯ КАРТКА + ЗДІБНІСТЬ
 // =============================================
-function renderMyCard(me, round, playerCount) {
-  const container = document.getElementById('myCardContent');
+function renderMyCard(me, room) {
+  const container   = document.getElementById('myCardContent');
   container.innerHTML = '';
-
   if (!me.card) {
     container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">Картка не знайдена</div>';
     return;
   }
 
-  const revealed  = me.revealed || [];
-const totalPlayers  = room ? room.players.length : 10;
-const revealPerRound = totalPlayers < 10 && round === 1 ? 2 : 1;
-  const revealLimit = (playerCount < 10 && round === 1) ? 2 : round;
-  const canReveal   = revealed.length < revealLimit;
-  const hint = document.createElement('div');
-  hint.textContent = canReveal
-    ? `▶ Можете розкрити ще ${revealLimit - revealed.length} атрибут(и)`
-    : `✓ Ліміт розкриття на цей раунд вичерпано`;
+  const round        = room.round;
+  const playerCount  = room.players.length;
+  const revealed     = me.revealed || [];
+  const revealLimit  = (playerCount < 10 && round === 1) ? 2 : round;
+  const canReveal    = revealed.length < revealLimit;
 
-    
+  const hint = document.createElement('div');
   hint.style.cssText = 'font-size:11px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;';
   hint.textContent = canReveal
-    ? `▶ Можете розкрити ще ${round - revealed.length} атрибут(и)`
+    ? `▶ Можете розкрити ще ${revealLimit - revealed.length} атрибут(и)`
     : `✓ Ліміт розкриття на цей раунд вичерпано`;
   container.appendChild(hint);
 
@@ -64,7 +59,6 @@ const revealPerRound = totalPlayers < 10 && round === 1 ? 2 : 1;
     const isRevealed = revealed.includes(key);
     const row = document.createElement('div');
     row.className = 'attr-row';
-
     if (isRevealed) {
       row.innerHTML = `
         <span class="attr-label">${ATTR_LABELS[key]}</span>
@@ -83,11 +77,221 @@ const revealPerRound = totalPlayers < 10 && round === 1 ? 2 : 1;
     }
     container.appendChild(row);
   });
+
+  // Здібність
+  renderAbilitySection(me, room, container);
+}
+
+function renderAbilitySection(me, room, container) {
+  if (!me.card.ability) return;
+
+  const ability  = me.card.ability;
+  const used     = me.card.abilityUsed;
+  const section  = document.createElement('div');
+  section.style.cssText = `
+    margin-top:16px;padding:14px;
+    background:${used ? 'rgba(255,255,255,0.02)' : 'rgba(181,72,31,0.08)'};
+    border:1px solid ${used ? 'var(--border)' : 'var(--rust)'};
+  `;
+
+  let html = `
+    <div style="color:${used ? 'var(--text-dim)' : 'var(--rust-light)'};
+      font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">
+      ⚡ Спеціальна здібність
+    </div>
+    <div style="color:${used ? 'var(--text-dim)' : 'var(--text)'};
+      font-size:13px;font-weight:bold;margin-bottom:6px;">${ability.name}</div>
+  `;
+
+  if (used) {
+    html += `<div style="color:var(--text-dim);font-size:12px;font-style:italic;">Вже використана</div>`;
+    section.innerHTML = html;
+    container.appendChild(section);
+    return;
+  }
+
+  const alivePlayers = room.players.filter(p => p.alive && p.id !== myId);
+  const myIndex      = room.players.findIndex(p => p.id === myId);
+
+  // Сусіди (перший живий вище і нижче в списку)
+  const prevNeighbor = room.players.slice(0, myIndex).reverse().find(p => p.alive && p.id !== myId);
+  const nextNeighbor = room.players.slice(myIndex + 1).find(p => p.alive && p.id !== myId);
+  const neighbors    = [prevNeighbor, nextNeighbor].filter(Boolean);
+
+  if (ability.type === 'replace_attr') {
+    const attrName = ATTR_LABELS[ability.attr];
+    if (ability.target === 'self') {
+      html += `
+        <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+          Замінює вашу: <b>${attrName}</b>
+        </div>
+        <button class="reveal-btn" style="width:100%;"
+          onclick="useAbility('${myId}', null)">Використати</button>`;
+
+    } else if (ability.target === 'neighbor') {
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+        Замінює <b>${attrName}</b> сусіда</div>`;
+      if (!neighbors.length) {
+        html += `<div style="color:var(--text-dim);font-size:12px;">Немає живих сусідів</div>`;
+      } else {
+        neighbors.forEach(p => {
+          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
+            onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+        });
+      }
+
+    } else {
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+        Замінює <b>${attrName}</b> будь-якого гравця</div>`;
+      alivePlayers.forEach(p => {
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
+          onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+      });
+    }
+
+  } else if (ability.type === 'immunity') {
+    if (ability.target === 'self') {
+      html += `
+        <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+          Захищає вас від голосування цього раунду
+        </div>
+        <button class="reveal-btn" style="width:100%;"
+          onclick="useAbility('${myId}', null)">Використати</button>`;
+
+    } else if (ability.target === 'neighbor') {
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+        Захищає сусіда від голосування</div>`;
+      neighbors.forEach(p => {
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
+          onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+      });
+
+    } else {
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+        Захищає будь-якого гравця від голосування</div>`;
+      alivePlayers.forEach(p => {
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
+          onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+      });
+    }
+
+  } else if (ability.type === 'spy') {
+    // Шпигунство — двокроковий вибір для 'one' і 'two'
+    if (spyState && spyState.targetId) {
+      // Крок 2 — вибір атрибутів
+      const target = room.players.find(p => p.id === spyState.targetId);
+      html += `
+        <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+          Оберіть атрибут(и) гравця <b>${target?.name}</b>:
+        </div>`;
+
+      if (ability.attr === 'two') {
+        // Вибір двох атрибутів через чекбокси
+        html += `<div id="spyAttrPicks">`;
+        ATTR_KEYS.forEach(key => {
+          html += `
+            <label style="display:flex;align-items:center;gap:8px;padding:6px 0;
+              border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;">
+              <input type="checkbox" value="${key}" style="width:auto;margin:0;"
+                onchange="updateSpyCheck()"> ${ATTR_LABELS[key]}
+            </label>`;
+        });
+        html += `</div>
+          <button id="spyConfirmBtn" class="reveal-btn" style="width:100%;margin-top:10px;"
+            disabled onclick="confirmSpyTwo()">Підглянути (0/2 обрано)</button>
+          <button class="secondary" style="width:100%;margin-top:6px;font-size:12px;padding:8px;"
+            onclick="spyState=null;renderRoom(null)">← Назад</button>`;
+      } else {
+        // Вибір одного атрибуту
+        ATTR_KEYS.forEach(key => {
+          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
+            onclick="useAbility('${spyState.targetId}', '${key}')">
+            ${ATTR_LABELS[key]}</button>`;
+        });
+        html += `<button class="secondary" style="width:100%;margin-top:4px;font-size:12px;padding:8px;"
+          onclick="spyState=null;renderRoom(null)">← Назад</button>`;
+      }
+
+    } else {
+      // Крок 1 — вибір гравця
+      const desc = ability.attr === 'all'  ? 'Побачити ВСІ атрибути гравця' :
+                   ability.attr === 'one'  ? 'Оберіть гравця, потім атрибут' :
+                   ability.attr === 'two'  ? 'Оберіть гравця, потім 2 атрибути' :
+                   `Побачити ${ATTR_LABELS[ability.attr]} гравця`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">${desc}</div>`;
+      alivePlayers.forEach(p => {
+        const onclick = (ability.attr === 'one' || ability.attr === 'two')
+          ? `spyState={targetId:'${p.id}',ability:null};fetchRoom().then(r=>renderRoom(r))`
+          : `useAbility('${p.id}', '${ability.attr === 'all' ? 'all' : ability.attr}')`;
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
+          onclick="${onclick}">${p.name}</button>`;
+      });
+    }
+  }
+
+  section.innerHTML = html;
+  container.appendChild(section);
+}
+
+// Хелпер для вибору двох атрибутів шпигуном
+function updateSpyCheck() {
+  const checks  = document.querySelectorAll('#spyAttrPicks input:checked');
+  const btn     = document.getElementById('spyConfirmBtn');
+  if (!btn) return;
+  const count   = checks.length;
+  btn.disabled  = count !== 2;
+  btn.textContent = `Підглянути (${count}/2 обрано)`;
+  if (count > 2) checks[checks.length - 1].checked = false;
+}
+
+async function confirmSpyTwo() {
+  const checks = document.querySelectorAll('#spyAttrPicks input:checked');
+  if (checks.length !== 2) return;
+  const attrKey = Array.from(checks).map(c => c.value).join(',');
+  await useAbility(spyState.targetId, attrKey);
 }
 
 // =============================================
-// ЕКРАН ГРИ — своя картка + всі гравці + голосування на одному екрані
+// ЕКРАН ГРИ
 // =============================================
+function renderOthers(players) {
+  const container = document.getElementById('othersContent');
+  container.innerHTML = '';
+
+  const others = players.filter(p => p.id !== myId);
+  if (!others.length) {
+    container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">Ще нікого немає</div>';
+    return;
+  }
+
+  others.forEach(p => {
+    const block     = document.createElement('div');
+    block.className = 'other-player';
+    const deadTag   = !p.alive ? '<span class="dead-tag">☠ вибув</span>' : '';
+    const revealed  = p.revealed || [];
+    let html = `<div class="other-player-name">${p.name}${deadTag}</div>`;
+    if (!revealed.length) {
+      html += '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">Ще нічого не розкрив</div>';
+    } else {
+      revealed.forEach(key => {
+        if (!p.card || !p.card[key]) return;
+        html += `
+          <div class="attr-row">
+            <span class="attr-label">${ATTR_LABELS[key]}</span>
+            <span class="attr-value">${p.card[key]}</span>
+          </div>`;
+      });
+      const hiddenCount = ATTR_KEYS.length - revealed.length;
+      if (hiddenCount > 0) {
+        html += `<div style="color:var(--text-dim);font-size:11px;font-style:italic;padding:4px 0;">
+          ще ${hiddenCount} прихованих...</div>`;
+      }
+    }
+    block.innerHTML = html;
+    container.appendChild(block);
+  });
+}
+
 function renderGame(room) {
   showScreen('gameScreen');
 
@@ -101,12 +305,14 @@ function renderGame(room) {
   const votes        = room.votes || {};
   const myVote       = votes[myId];
   const iVoted       = !!myVote || imEliminated;
+  const immunePlayers = room.immunePlayers || [];
 
   // --- Своя картка ---
   const myCardPanel = document.getElementById('myCardPanel');
   if (imEliminated) {
     let html = '<div class="panel-label">Ваша картка</div>';
-    html += `<div style="color:var(--blood);font-size:12px;text-align:center;padding:8px 0 14px;letter-spacing:1px;">☠ Ви вибули — спостерігайте за грою</div>`;
+    html += `<div style="color:var(--blood);font-size:12px;text-align:center;
+      padding:8px 0 14px;letter-spacing:1px;">☠ Ви вибули — спостерігайте за грою</div>`;
     if (me && me.card) {
       const revealed = me.revealed || [];
       ATTR_KEYS.forEach(key => {
@@ -124,10 +330,10 @@ function renderGame(room) {
     myCardPanel.innerHTML = html;
   } else {
     myCardPanel.innerHTML = '<div class="panel-label">Ваша картка</div><div id="myCardContent"></div>';
-    if (me && me.card) renderMyCard(me, room.round);
+    if (me && me.card) renderMyCard(me, room);
   }
 
-  // --- Всі гравці + голосування на одному екрані ---
+  // --- Гравці + голосування ---
   const othersContainer = document.getElementById('othersContent');
   othersContainer.innerHTML = '';
 
@@ -135,7 +341,6 @@ function renderGame(room) {
   const totalVoters  = alivePlayers.length;
   const votedCount   = Object.keys(votes).length;
 
-  // Заголовок блоку
   const blockTitle = document.createElement('div');
   blockTitle.style.cssText = 'font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;';
   blockTitle.textContent = isVoting
@@ -143,7 +348,6 @@ function renderGame(room) {
     : 'Гравці';
   othersContainer.appendChild(blockTitle);
 
-  // Нічия
   if (isVoting && room.tieIds) {
     const notice = document.createElement('div');
     notice.style.cssText = 'color:var(--rust-light);font-size:12px;margin-bottom:12px;letter-spacing:1px;';
@@ -151,54 +355,51 @@ function renderGame(room) {
     othersContainer.appendChild(notice);
   }
 
-  // Максимум голосів для підсвітки лідера
   const maxVoteCount = isVoting
     ? Math.max(0, ...room.players.map(p =>
         Object.values(votes).filter(v => v === p.id).length))
     : 0;
 
   room.players.forEach(p => {
-    const isMe       = p.id === myId;
-    const voteCount  = isVoting ? Object.values(votes).filter(v => v === p.id).length : 0;
-    const isLeading  = isVoting && voteCount > 0 && voteCount === maxVoteCount;
-    const isMyChoice = isVoting && myVote === p.id;
+    const isMe        = p.id === myId;
+    const voteCount   = isVoting ? Object.values(votes).filter(v => v === p.id).length : 0;
+    const isLeading   = isVoting && voteCount > 0 && voteCount === maxVoteCount;
+    const isMyChoice  = isVoting && myVote === p.id;
     const isTieTarget = isVoting && room.tieIds && room.tieIds.includes(p.id);
-    const revealed   = p.revealed || [];
+    const isImmune    = immunePlayers.includes(p.id);
+    const revealed    = p.revealed || [];
 
     const block = document.createElement('div');
     block.style.cssText = `
-      margin-bottom:14px;
-      padding:12px;
+      margin-bottom:14px;padding:12px;
       background:${isLeading ? 'rgba(122,31,31,0.15)' : 'rgba(255,255,255,0.02)'};
-      border:1px solid ${isLeading ? 'var(--blood)' : isTieTarget ? 'var(--rust)' : 'var(--border)'};
-      border-left:3px solid ${isMe ? 'var(--rust-light)' : isLeading ? 'var(--blood)' : 'var(--border)'};
+      border:1px solid ${isImmune ? '#4a7a4a' : isLeading ? 'var(--blood)' : isTieTarget ? 'var(--rust)' : 'var(--border)'};
+      border-left:3px solid ${isMe ? 'var(--rust-light)' : isImmune ? '#4a7a4a' : isLeading ? 'var(--blood)' : 'var(--border)'};
     `;
 
-    // Шапка гравця
     const deadTag  = !p.alive ? ' <span style="color:var(--blood);font-size:11px;">☠ вибув</span>' : '';
     const meTag    = isMe ? ' <span style="color:var(--text-dim);font-size:11px;">(ви)</span>' : '';
     const hostTag  = p.id === room.hostId ? ' 👑' : '';
+    const immuneTag = isImmune ? ' <span style="color:#4a7a4a;font-size:11px;">🛡 імунітет</span>' : '';
 
     let html = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span style="font-size:13px;color:${isLeading ? 'var(--blood)' : 'var(--rust-light)'};">
-          ${p.name}${meTag}${hostTag}${deadTag}
+          ${p.name}${meTag}${hostTag}${deadTag}${immuneTag}
         </span>
         ${isVoting ? `<span style="font-size:13px;color:${isLeading ? 'var(--blood)' : 'var(--text-dim)'};">${voteCount} 🗳</span>` : ''}
       </div>
     `;
 
-    // Прогрес-бар голосів
     if (isVoting && totalVoters > 0) {
       const pct = Math.round((voteCount / totalVoters) * 100);
       html += `
         <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:10px;">
-          <div style="height:3px;width:${pct}%;background:${isLeading ? 'var(--blood)' : 'var(--rust)'};border-radius:2px;transition:width 0.3s;"></div>
-        </div>
-      `;
+          <div style="height:3px;width:${pct}%;background:${isLeading ? 'var(--blood)' : 'var(--rust)'};
+            border-radius:2px;transition:width 0.3s;"></div>
+        </div>`;
     }
 
-    // Розкриті атрибути (не показуємо свої — вони вже у своїй картці)
     if (!isMe) {
       if (!revealed.length) {
         html += '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">Ще нічого не розкрив</div>';
@@ -213,7 +414,8 @@ function renderGame(room) {
         });
         const hiddenCount = ATTR_KEYS.length - revealed.length;
         if (hiddenCount > 0) {
-          html += `<div style="color:var(--text-dim);font-size:11px;font-style:italic;padding:4px 0;">ще ${hiddenCount} прихованих...</div>`;
+          html += `<div style="color:var(--text-dim);font-size:11px;font-style:italic;padding:4px 0;">
+            ще ${hiddenCount} прихованих...</div>`;
         }
       }
     }
@@ -222,12 +424,15 @@ function renderGame(room) {
     if (isVoting && !isMe && p.alive && !imEliminated) {
       const canVoteThis = !room.tieIds || isTieTarget;
       if (canVoteThis) {
+        const immuneDisabled = isImmune && !isMyChoice;
         html += `
           <button class="vote-btn"
-            style="margin-top:10px;width:100%;${isMyChoice ? 'background:var(--rust);color:#100b08;' : ''}"
-            ${iVoted ? 'disabled' : ''}
+            style="margin-top:10px;width:100%;
+              ${isMyChoice ? 'background:var(--rust);color:#100b08;' : ''}
+              ${immuneDisabled ? 'opacity:0.3;cursor:not-allowed;' : ''}"
+            ${iVoted || immuneDisabled ? 'disabled' : ''}
             onclick="castVote('${p.id}')">
-            ${isMyChoice ? '✓ Ваш вибір' : 'Вигнати'}
+            ${isImmune ? '🛡 Має імунітет' : isMyChoice ? '✓ Ваш вибір' : 'Вигнати'}
           </button>`;
       }
     }
@@ -255,12 +460,13 @@ function renderGame(room) {
         </div>`;
     } else {
       skipRow.innerHTML = `
-        <button class="secondary" style="font-size:12px;padding:10px;${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
+        <button class="secondary" style="font-size:12px;padding:10px;
+          ${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
           ${iVoted ? 'disabled' : ''}
           onclick="castVote('skip')">
           ${mySkipped
-            ? `✓ Ви пропустили (у вас ще ${skipsLeft - 1}/${skipLimit})`
-            : `Пропустити (у вас залишилось: ${skipsLeft}/${skipLimit})`}
+            ? `✓ Ви пропустили (залишилось: ${skipsLeft - 1}/${skipLimit})`
+            : `Пропустити (залишилось: ${skipsLeft}/${skipLimit})`}
         </button>`;
     }
     othersContainer.appendChild(skipRow);
@@ -275,7 +481,8 @@ function renderGame(room) {
     if (room.hostId === myId && votedCount >= totalVoters) {
       nextBtn.style.display = 'block';
       document.getElementById('voteResultPanel').style.display = 'block';
-      document.getElementById('voteResultText').textContent = 'Всі проголосували. Натисніть щоб підвести підсумок.';
+      document.getElementById('voteResultText').textContent =
+        'Всі проголосували. Натисніть щоб підвести підсумок.';
     } else {
       nextBtn.style.display = 'none';
       document.getElementById('voteResultPanel').style.display = 'none';
@@ -296,69 +503,63 @@ function renderFinale(room) {
   const survivors = room.players.filter(p => p.alive);
   const list      = document.getElementById('survivorsList');
 
-  // Катастрофа і бункер
   list.innerHTML = `
     <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
       <div style="color:var(--text);font-size:14px;">${room.catastrophe}</div>
     </div>
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
       <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
     </div>
-    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Виживші</div>
+    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+      text-transform:uppercase;margin-bottom:12px;">Виживші</div>
   `;
 
-  // Кожен виживший з розкладкою
   survivors.forEach((p, i) => {
     const cardId = 'card_' + i;
     const card   = p.card || {};
-
-    const playerEl = document.createElement('div');
-    playerEl.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--rust);';
-
-    // Шапка — клікабельна
-    playerEl.innerHTML = `
+    const el     = document.createElement('div');
+    el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--rust);';
+    el.innerHTML = `
       <div onclick="toggleCard('${cardId}')"
-        style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+        style="display:flex;justify-content:space-between;align-items:center;
+          padding:12px 14px;cursor:pointer;">
         <div>
           <span style="color:var(--rust-light);font-size:14px;">${p.name}</span>
           <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
         </div>
-        <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;transition:transform 0.2s;">▶</span>
+        <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
       </div>
-
       <div id="${cardId}" style="display:none;padding:0 14px 14px;">
         ${ATTR_KEYS.map(key => `
           <div class="attr-row">
             <span class="attr-label">${ATTR_LABELS[key]}</span>
             <span class="attr-value">${card[key] || '—'}</span>
-          </div>
-        `).join('')}
+          </div>`).join('')}
       </div>
     `;
-
-    list.appendChild(playerEl);
+    list.appendChild(el);
   });
 
-  // Вибулі теж показуємо
   const eliminated = room.players.filter(p => !p.alive);
   if (eliminated.length) {
-    const elimTitle = document.createElement('div');
-    elimTitle.style.cssText = 'color:var(--blood);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:20px 0 12px;';
-    elimTitle.textContent = '☠ Вибули';
-    list.appendChild(elimTitle);
+    const title = document.createElement('div');
+    title.style.cssText = 'color:var(--blood);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:20px 0 12px;';
+    title.textContent = '☠ Вибули';
+    list.appendChild(title);
 
     eliminated.forEach((p, i) => {
       const cardId = 'elim_' + i;
       const card   = p.card || {};
-
-      const playerEl = document.createElement('div');
-      playerEl.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--blood);opacity:0.7;';
-
-      playerEl.innerHTML = `
+      const el     = document.createElement('div');
+      el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--blood);opacity:0.7;';
+      el.innerHTML = `
         <div onclick="toggleCard('${cardId}')"
-          style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+          style="display:flex;justify-content:space-between;align-items:center;
+            padding:12px 14px;cursor:pointer;">
           <div>
             <span style="color:var(--blood);font-size:14px;">${p.name}</span>
             <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
@@ -366,18 +567,15 @@ function renderFinale(room) {
           </div>
           <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
         </div>
-
         <div id="${cardId}" style="display:none;padding:0 14px 14px;">
           ${ATTR_KEYS.map(key => `
             <div class="attr-row">
               <span class="attr-label">${ATTR_LABELS[key]}</span>
               <span class="attr-value">${card[key] || '—'}</span>
-            </div>
-          `).join('')}
+            </div>`).join('')}
         </div>
       `;
-
-      list.appendChild(playerEl);
+      list.appendChild(el);
     });
   }
 
@@ -385,19 +583,24 @@ function renderFinale(room) {
     room.finale || 'Генеруємо історію...';
 }
 
-// Функція розкриття картки на фіналі
 function toggleCard(cardId) {
   const el    = document.getElementById(cardId);
   const arrow = document.getElementById('arrow_' + cardId);
   if (!el) return;
-  const isOpen = el.style.display !== 'none';
-  el.style.display    = isOpen ? 'none' : 'block';
+  const isOpen      = el.style.display !== 'none';
+  el.style.display  = isOpen ? 'none' : 'block';
   arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
 }
+
 // =============================================
 // ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
 // =============================================
 function renderRoom(room) {
+  if (!room) {
+    // Викликали без room (наприклад після спрощеного spyState) — перечитуємо
+    fetchRoom().then(r => { if (r) renderRoom(r); });
+    return;
+  }
   switch (room.status) {
     case 'lobby':
     case 'starting':

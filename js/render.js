@@ -45,7 +45,7 @@ function renderMyCard(me, room) {
   const round        = room.round;
   const playerCount  = room.players.length;
   const revealed     = me.revealed || [];
-  const revealLimit  = (playerCount < 10 && round === 1) ? 2 : round;
+  const revealLimit = playerCount < 10 ? round + 1 : round;
   const canReveal    = revealed.length < revealLimit;
 
   const hint = document.createElement('div');
@@ -490,7 +490,7 @@ function renderGame(room) {
   } else {
     nextBtn.style.display = 'none';
     document.getElementById('voteResultPanel').style.display = 'none';
-    voteBtn.style.display = (room.hostId === myId && !imEliminated) ? 'block' : 'none';
+   voteBtn.style.display = room.hostId === myId ? 'block' : 'none';
   }
 }
 

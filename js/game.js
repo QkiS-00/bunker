@@ -265,16 +265,62 @@ async function closeVoting(room) {
   }
 
   // Максимум голосів
+  // Рахуємо скіпи і реальні голоси
+  const skipCount = Object.values(votes).filter(v => v === 'skip').length;
+
+  // Якщо всі пропустили
+  if (Object.keys(tally).length === 0) {
+    room.votingOpen = false;
+    room.votes      = {};
+    room.tieIds     = null;
+    room.log.push(`Раунд ${room.round}: нікого не вигнали (всі пропустили)`);
+    room.status = 'playing';
+    room.round += 1;
+    await saveRoom(room);
+    renderRoom(room);
+    return;
+  }
+
+  // Знаходимо максимум реальних голосів
   let maxVotes = 0;
   Object.values(tally).forEach(count => {
     if (count > maxVotes) maxVotes = count;
   });
 
+  // Порівнюємо скіпи з максимальними голосами
+  if (skipCount > maxVotes) {
+    // Скіпів більше — ніхто не вибуває
+    room.votingOpen = false;
+    room.votes      = {};
+    room.tieIds     = null;
+    room.log.push(
+      `Раунд ${room.round}: скіп переміг (${skipCount} скіп vs ${maxVotes} голосів) — нікого не вигнали`
+    );
+    room.status = 'playing';
+    room.round += 1;
+    await saveRoom(room);
+    renderRoom(room);
+    return;
+  }
+
+  if (skipCount === maxVotes) {
+    // Нічия між скіп і голосами — переголосування
+    room.votes      = {};
+    room.votingOpen = true;
+    room.tieIds     = null;
+    hasVoted        = false;
+    room.log.push(`Раунд ${room.round}: нічия між скіп і голосами — переголосування`);
+    await saveRoom(room);
+    renderRoom(room);
+    return;
+  }
+
+  // Голоси перемогли — знаходимо хто набрав найбільше
   const topIds = Object.entries(tally)
     .filter(([id, count]) => count === maxVotes)
     .map(([id]) => id);
 
-  // Нічия
+  // Нічия між гравцями
   if (topIds.length > 1) {
     room.votes      = {};
     room.votingOpen = true;
@@ -289,12 +335,12 @@ async function closeVoting(room) {
     return;
   }
 
-  // Виключення
+  // Виключення гравця
   const eliminatedId = topIds[0];
   const eliminated   = room.players.find(p => p.id === eliminatedId);
   if (eliminated) {
     eliminated.alive    = false;
-    eliminated.revealed = [...ATTR_KEYS]; // відкриваємо всю картку
+    eliminated.revealed = [...ATTR_KEYS];
   }
 
   room.votingOpen = false;
@@ -302,7 +348,7 @@ async function closeVoting(room) {
   room.tieIds     = null;
   room.log.push(
     `Раунд ${room.round}: ${eliminated?.name} покинув бункер ` +
-    `(${maxVotes} голосів, ${roundSkips} пропустили)`
+    `(${maxVotes} голосів, ${skipCount} пропустили)`
   );
 
   const alivePlayers = room.players.filter(p => p.alive);
@@ -315,7 +361,6 @@ async function closeVoting(room) {
 
   await saveRoom(room);
   renderRoom(room);
-
   if (room.status === 'ended') generateFinale(room);
 }
 

@@ -367,6 +367,8 @@ async function closeVoting(room) {
 // =============================================
 // ФІНАЛ З ШІ
 // =============================================
+// ФІНАЛ З ШІ (через Cloudflare Proxy)
+// =============================================
 async function generateFinale(room) {
   const survivors    = room.players.filter(p => p.alive);
   const eliminated   = room.players.filter(p => !p.alive);
@@ -380,7 +382,7 @@ async function generateFinale(room) {
     ? '\nВыбыли: ' + eliminated.map(p => p.name).join(', ')
     : '';
 
-  const prompt = `Ты —постапокалиптический рассказчик.
+  const prompt = `Ты — постапокалиптический рассказчик.
 Катастрофа: ${room.catastrophe}
 Бункер: ${room.bunker}
 
@@ -391,27 +393,31 @@ ${eliminatedDesc}
 История голосований:
 ${(room.log || []).join('\n')}
 
-Напиши короткий рассказ о том как люди которые прошли проживают в бункере, учитывай время проживания в бункере, 
-учитывай все характеристики прошедших, учитывай местность и катастрофу, в конце подведи итог смогли 
-ли пережить или до какого года дожили`;
+Напиши короткий рассказ о том, как выжившие проживают в бункере.
+Учитывай время проживания, все характеристики персонажей, местность и катастрофу.
 
-  const GEMINI_KEY = 'AQ.Ab8RN6L-1-C1sQjSK2sY3cKQZsGqnBkUl9VFybNK2f4SD5NqMA'; // вставте свій ключ
+Правила вылазок и ресурсов:
+1. Если катастрофа или оборудование позволяют, они могут ненадолго покидать убежище для сбора припасов.
+2. В бункере всегда присутсвует запас еды и воды на 7 дней для каждого игрока.
+3. СТРОГАЯ ЛОГИКА ПРЕДМЕТОВ: Все вещи, инструменты и медикаменты герои должны либо иметь в багаже изначально, либо смастерить из доступных материалов бункера, либо добыть во время описанных вылазок на поверхность. Ничего не должно появляться из ниоткуда.
+
+В конце подведи итог: смогли ли они пережить этот срок или до какого года дожили.`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature:     0.9,
-            maxOutputTokens: 1000
-          }
-        })
-      }
-    );
+    // ВАЖНО: Убедитесь, что эта ссылка совпадает с URL вашего нового воркера
+    const url = 'https://morning-mouse-864abunkerai.vladpugac90.workers.dev/';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature:     0.9,
+          maxOutputTokens: 1000
+        }
+      })
+    });
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;

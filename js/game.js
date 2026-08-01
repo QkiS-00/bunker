@@ -433,4 +433,4 @@ ${(room.log || []).join('\n')}
     document.getElementById('finaleText').textContent =
       'Не вдалося згенерувати історію. Але ви вижили — і це головне.';
   }
-}
+}//

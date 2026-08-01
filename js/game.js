@@ -369,10 +369,16 @@ async function closeVoting(room) {
 // =============================================
 async function generateFinale(room) {
   const survivors    = room.players.filter(p => p.alive);
+  const eliminated   = room.players.filter(p => !p.alive);
+
   const survivorDesc = survivors.map(p => {
     const c = p.card;
-    return `${p.name} — ${c.profession}, здоровье: ${c.health}, хобби: ${c.hobby}, навык: ${c.specialSkill}, багаж: ${c.luggage}`;
+    return `${p.name} — ${c.profession}, здоровье: ${c.health}, хобби: ${c.hobby}, навык: ${c.specialSkill}, багаж: ${c.luggage}, фобия: ${c.phobia}`;
   }).join('\n');
+
+  const eliminatedDesc = eliminated.length
+    ? '\nВыбыли: ' + eliminated.map(p => p.name).join(', ')
+    : '';
 
   const prompt = `Ты — саркастичный постапокалиптический рассказчик.
 Катастрофа: ${room.catastrophe}
@@ -380,31 +386,46 @@ async function generateFinale(room) {
 
 Выжившие:
 ${survivorDesc}
+${eliminatedDesc}
 
 История голосований:
-${room.log.join('\n')}
+${(room.log || []).join('\n')}
 
 Напиши короткий юмористический рассказ (10-15 предложений) о том, как эти люди живут в бункере.
 Упомяни каждого выжившего по имени, его профессию и особый навык.
 Добавь абсурдные ситуации связанные с их фобиями и багажом.
+В конце укажи шанс выживания группы в процентах и объясни почему.
 Финал должен быть неожиданным и смешным.`;
 
+  const GEMINI_KEY = 'AQ.Ab8RN6JbcQtkumYsz_gE9UTp2qcs0yxgzJ6UUofib7Tni0WhLw'; // вставте свій ключ
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature:     0.9,
+            maxOutputTokens: 1000
+          }
+        })
+      }
+    );
+
     const data = await response.json();
-    const text = data.content[0].text;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) throw new Error('Немає відповіді від Gemini');
+
     room.finale = text;
     await saveRoom(room);
     document.getElementById('finaleText').textContent = text;
+
   } catch (e) {
+    console.error('Gemini error:', e);
     document.getElementById('finaleText').textContent =
       'Не вдалося згенерувати історію. Але ви вижили — і це головне.';
   }

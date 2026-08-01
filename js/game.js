@@ -395,7 +395,7 @@ ${(room.log || []).join('\n')}
 учитывай все характеристики прошедших, учитывай местность и катастрофу, в конце подведи итог смогли 
 ли пережить или до какого года дожили`;
 
-  const GEMINI_KEY = 'AQ.Ab8RN6JbcQtkumYsz_gE9UTp2qcs0yxgzJ6UUofib7Tni0WhLw'; // вставте свій ключ
+  const GEMINI_KEY = 'AQ.Ab8RN6L-1-C1sQjSK2sY3cKQZsGqnBkUl9VFybNK2f4SD5NqMA'; // вставте свій ключ
 
   try {
     const response = await fetch(

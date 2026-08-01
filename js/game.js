@@ -405,7 +405,7 @@ ${(room.log || []).join('\n')}
 
   try {
     // ВАЖНО: Убедитесь, что эта ссылка совпадает с URL вашего нового воркера
-    const url = 'https://morning-mouse-864abunkerai.vladpugac90.workers.dev/';
+    const url = 'https://raspy-hall-ed6dgeminikey.vladpugac90.workers.dev/';
 
     const response = await fetch(url, {
       method: 'POST',

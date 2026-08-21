@@ -150,6 +150,14 @@ async function tryReconnect() {
   }
 
   const me = room.players.find(p => p.id === myId);
+    // Якщо гра закінчена — не реконектимось, йдемо на старт
+  if (room.status === 'ended') {
+    localStorage.removeItem('bunker_roomCode');
+    localStorage.removeItem('bunker_myName');
+    roomCode = '';
+    myName   = '';
+    return false;
+  }
   if (!me) {
     localStorage.removeItem('bunker_roomCode');
     localStorage.removeItem('bunker_myName');

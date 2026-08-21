@@ -88,3 +88,14 @@ window.addEventListener('load', async () => {
     document.getElementById('landingScreen').style.display = 'block';
   }
 });
+document.getElementById('endGameBtn').addEventListener('click', () => {
+  // Очищаємо сесію
+  localStorage.removeItem('bunker_roomCode');
+  localStorage.removeItem('bunker_myName');
+  roomCode = '';
+  myName   = '';
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+  // Повертаємо на стартовий екран
+  showScreen('landingScreen');
+});

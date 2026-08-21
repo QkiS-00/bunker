@@ -551,8 +551,10 @@ function toggleCard(cardId) {
 // =============================================
 // ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
 // =============================================
+// =============================================
+// ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
+// =============================================
 function renderRoom(room) {
- function renderRoom(room) {
   if (!room) {
     fetchRoom().then(r => { if (r) renderRoom(r); });
     return;
@@ -582,4 +584,4 @@ function renderRoom(room) {
       showScreen('landingScreen');
       break;
   }
-}}
+}

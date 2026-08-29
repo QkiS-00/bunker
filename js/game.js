@@ -370,17 +370,17 @@ async function closeVoting(room) {
 // ФІНАЛ З ШІ (через Cloudflare Proxy)
 // =============================================
 async function generateFinale(room) {
-  const survivors    = room.players.filter(p => p.alive);
-  const eliminated   = room.players.filter(p => !p.alive);
+  const survivors  = room.players.filter(p => p.alive);
+  const eliminated = room.players.filter(p => !p.alive);
 
   const survivorDesc = survivors.map(p => {
     const c = p.card;
-    return `${p.name} — ${c.profession}, здоровье: ${c.health}, хобби: ${c.hobby}, навык: ${c.specialSkill}, багаж: ${c.luggage}, фобия: ${c.phobia}`;
+    return `${p.name} — профессия: ${c.profession}, здоровье: ${c.health}, хобби: ${c.hobby}, навык: ${c.specialSkill}, багаж: ${c.luggage}, фобия: ${c.phobia}, биография: ${c.bioFact}`;
   }).join('\n');
 
-  const eliminatedDesc = eliminated.length
-    ? '\nВыбыли: ' + eliminated.map(p => p.name).join(', ')
-    : '';
+  const eliminatedNames = eliminated.length
+    ? eliminated.map(p => p.name).join(', ')
+    : 'никто';
 
   const prompt = `Ты — постапокалиптический рассказчик.
 Катастрофа: ${room.catastrophe}
@@ -388,7 +388,8 @@ async function generateFinale(room) {
 
 Выжившие:
 ${survivorDesc}
-${eliminatedDesc}
+
+Выбыли из игры: ${eliminatedNames}
 
 История голосований:
 ${(room.log || []).join('\n')}
@@ -404,25 +405,29 @@ ${(room.log || []).join('\n')}
 В конце подведи итог: смогли ли они пережить этот срок или до какого года дожили.`;
 
   try {
-    // ВАЖНО: Убедитесь, что эта ссылка совпадает с URL вашего нового воркера
-    const url = 'https://raspy-hall-ed6dgeminikey.vladpugac90.workers.dev/';
+    document.getElementById('finaleText').textContent = 'Генеруємо історію...';
 
-    const response = await fetch(url, {
+    const response = await fetch('https://bunker-gemini.vladpugac90.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature:     0.9,
-          maxOutputTokens: 1000
+          maxOutputTokens: 1200
         }
       })
     });
 
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || `Статус: ${response.status}`);
+    }
+
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!text) throw new Error('Немає відповіді від Gemini');
+    if (!text) throw new Error('Порожня відповідь від Gemini');
 
     room.finale = text;
     await saveRoom(room);
@@ -431,6 +436,6 @@ ${(room.log || []).join('\n')}
   } catch (e) {
     console.error('Gemini error:', e);
     document.getElementById('finaleText').textContent =
-      'Не вдалося згенерувати історію. Але ви вижили — і це головне.';
+      `Помилка: ${e.message}`;
   }
-}//
+}

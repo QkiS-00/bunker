@@ -49,18 +49,7 @@
       <div class="panel-label">Гравці</div>
       <div id="playersList"></div>
     </div>
-<div style="color:var(--text-dim);font-size:11px;margin-bottom:24px;">
-  🏠 <span id="bunkerDisplay"></span>
-</div>
 
-<!-- Івент раунду -->
-<div id="currentEventBlock" style="display:none;margin-bottom:18px;
-  padding:14px;border:1px solid var(--rust);border-left:3px solid var(--rust-light);
-  background:rgba(181,72,31,0.08);">
-  <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
-    text-transform:uppercase;margin-bottom:6px;">⚠ Подія в бункері</div>
-  <div id="currentEventText" style="color:var(--text);font-size:13px;line-height:1.6;"></div>
-</div>
     <div class="panel" id="hostSettings" style="display:none;">
       <div class="panel-label">Налаштування (хост)</div>
       <label for="capacityInput">Місткість бункера (скільки виживе)</label>
@@ -73,7 +62,7 @@
     </div>
   </div>
 
-  <!-- ЕКРАН 3: Гра + Голосування (один екран) -->
+  <!-- ЕКРАН 3: Гра + Голосування -->
   <div class="wrap" id="gameScreen" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <div class="title" style="font-size:28px;">БУНКЕР</div>
@@ -85,8 +74,18 @@
     <div style="color:var(--rust-light);font-size:12px;letter-spacing:1px;margin-bottom:6px;">
       ⚠ <span id="catastropheDisplay"></span>
     </div>
-    <div style="color:var(--text-dim);font-size:11px;margin-bottom:24px;">
+    <div style="color:var(--text-dim);font-size:11px;margin-bottom:12px;">
       🏠 <span id="bunkerDisplay"></span>
+    </div>
+
+    <!-- Івент раунду — тут, після бункера -->
+    <div id="currentEventBlock" style="display:none;margin-bottom:18px;
+      padding:14px;border:1px solid var(--rust);
+      border-left:3px solid var(--rust-light);
+      background:rgba(181,72,31,0.08);">
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:6px;">⚠ Подія в бункері</div>
+      <div id="currentEventText" style="color:var(--text);font-size:13px;line-height:1.6;"></div>
     </div>
 
     <!-- Своя картка -->
@@ -101,13 +100,12 @@
       <div id="othersContent"></div>
     </div>
 
-    <!-- Результат голосування (тільки хост бачить) -->
+    <!-- Результат голосування -->
     <div class="panel" style="display:none;" id="voteResultPanel">
       <div class="panel-label">Результат</div>
       <div id="voteResultText"></div>
     </div>
 
-    <!-- Кнопки -->
     <button id="startVoteBtn" style="display:none;margin-top:12px;">
       Почати голосування
     </button>
@@ -132,12 +130,12 @@
         Генеруємо історію...
       </div>
     </div>
-  </div>
- <button id="endGameBtn" style="display:none;margin-top:18px;background:var(--blood);border-color:var(--blood);">
-  Завершити гру
-</button>
 
-  <!-- JS файли — порядок важливий! -->
+    <button id="endGameBtn" style="display:none;margin-top:18px;background:var(--blood);border-color:var(--blood);">
+      Завершити гру
+    </button>
+  </div>
+
   <script src="js/data.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/game.js"></script>

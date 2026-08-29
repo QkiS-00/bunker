@@ -410,8 +410,9 @@ ${(room.log || []).join('\n')}
     const response = await fetch('https://bunker-gemini.vladpugac90.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+          body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
+
         generationConfig: {
           temperature:     0.9,
           maxOutputTokens: 3500

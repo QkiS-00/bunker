@@ -49,7 +49,18 @@
       <div class="panel-label">Гравці</div>
       <div id="playersList"></div>
     </div>
+<div style="color:var(--text-dim);font-size:11px;margin-bottom:24px;">
+  🏠 <span id="bunkerDisplay"></span>
+</div>
 
+<!-- Івент раунду -->
+<div id="currentEventBlock" style="display:none;margin-bottom:18px;
+  padding:14px;border:1px solid var(--rust);border-left:3px solid var(--rust-light);
+  background:rgba(181,72,31,0.08);">
+  <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+    text-transform:uppercase;margin-bottom:6px;">⚠ Подія в бункері</div>
+  <div id="currentEventText" style="color:var(--text);font-size:13px;line-height:1.6;"></div>
+</div>
     <div class="panel" id="hostSettings" style="display:none;">
       <div class="panel-label">Налаштування (хост)</div>
       <label for="capacityInput">Місткість бункера (скільки виживе)</label>

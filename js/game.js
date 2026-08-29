@@ -39,7 +39,8 @@ function dealCards(room) {
   room.bunker        = pick(DATA.bunker);
   room.status        = 'playing';
   room.round         = 1;
-  room.immunePlayers = [];
+  room.immunePlayers = [];room.currentEvent  = null;  // поточний івент раунду
+  room.eventLog      = [];    // історія всіх івентів
   return room;
 }
 
@@ -259,6 +260,18 @@ async function closeVoting(room) {
     room.log.push(`Раунд ${room.round}: нікого не вигнали (${roundSkips} пропустили)`);
     room.status = 'playing';
     room.round += 1;
+       // Івент тільки в раундах 3, 6, 9 з шансом 25%
+    if ([3, 6, 9].includes(room.round)) {
+      room.currentEvent = Math.random() < 0.25
+        ? pick(BUNKER_EVENTS)
+        : null;
+      if (room.currentEvent) {
+        room.eventLog = room.eventLog || [];
+        room.eventLog.push(`Раунд ${room.round}: ${room.currentEvent}`);
+      }
+    } else {
+      room.currentEvent = null;
+    }
     await saveRoom(room);
     renderRoom(room);
     return;
@@ -354,11 +367,23 @@ async function closeVoting(room) {
   const alivePlayers = room.players.filter(p => p.alive);
   if (alivePlayers.length <= room.capacity) {
     room.status = 'ended';
-  } else {
+    } else
     room.status = 'playing';
     room.round += 1;
-  }
-
+    // 25% шанс івенту на новий раунд
+       // Івент тільки в раундах 3, 6, 9 з шансом 25%
+       // Івент тільки в раундах 3, 6, 9 з шансом 25%
+    if ([3, 6, 9].includes(room.round)) {
+      room.currentEvent = Math.random() < 0.25
+        ? pick(BUNKER_EVENTS)
+        : null;
+      if (room.currentEvent) {
+        room.eventLog = room.eventLog || [];
+        room.eventLog.push(`Раунд ${room.round}: ${room.currentEvent}`);
+      }
+    } else {
+      room.currentEvent = null;
+    }
   await saveRoom(room);
   renderRoom(room);
   if (room.status === 'ended') generateFinale(room);
@@ -393,6 +418,7 @@ ${survivorDesc}
 
 История голосований:
 ${(room.log || []).join('\n')}
+${eventHistory}
 
 Напиши короткий рассказ о том, как выжившие проживают в бункере.
 Учитывай время проживания, все характеристики персонажей, местность и катастрофу.

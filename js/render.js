@@ -252,6 +252,14 @@ function renderGame(room) {
   document.getElementById('roundDisplay').textContent       = room.round;
   document.getElementById('catastropheDisplay').textContent = room.catastrophe;
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
+   // Івент поточного раунду
+  const eventBlock = document.getElementById('currentEventBlock');
+  if (room.currentEvent) {
+    eventBlock.style.display = 'block';
+    document.getElementById('currentEventText').textContent = room.currentEvent;
+  } else {
+    eventBlock.style.display = 'none';
+  }
 
   const me            = room.players.find(p => p.id === myId);
   const imEliminated  = me && !me.alive;

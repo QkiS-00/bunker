@@ -535,8 +535,8 @@ function renderFinale(room) {
   document.getElementById('finaleText').textContent =
     room.finale || 'Генеруємо історію...';
       // Кнопка завершення тільки для хоста
-  document.getElementById('endGameBtn').style.display =
-    room.hostId === myId ? 'block' : 'none';
+  const endBtn = document.getElementById('endGameBtn');
+  endBtn.style.display = room.hostId === myId ? 'block' : 'none';
 }
 
 function toggleCard(cardId) {
@@ -580,6 +580,16 @@ function renderRoom(room) {
       roomCode = '';
       myName   = '';
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      alert('Хост завершив гру. Дякуємо за участь!');
+      showScreen('landingScreen');
+      break;
+          case 'closed':
+      localStorage.removeItem('bunker_roomCode');
+      localStorage.removeItem('bunker_myName');
+      roomCode = '';
+      myName   = '';
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      document.getElementById('endGameBtn').style.display = 'none';
       alert('Хост завершив гру. Дякуємо за участь!');
       showScreen('landingScreen');
       break;

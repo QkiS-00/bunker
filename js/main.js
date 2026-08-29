@@ -89,29 +89,25 @@ window.addEventListener('load', async () => {
   }
 });
 document.getElementById('endGameBtn').addEventListener('click', async () => {
-  if (!confirm('Завершити гру для всіх гравців?')) return;
-
-  // Спочатку ставимо статус 'closed' щоб всі отримали сигнал
+  // Перевірка що це хост
   const room = await fetchRoom();
-  if (room) {
-    room.status = 'closed';
-    await saveRoom(room);
-    // Чекаємо 3 секунди щоб polling всіх спрацював
-    await new Promise(r => setTimeout(r, 3000));
-    // Видаляємо кімнату з Firebase
-    await deleteRoom();
+  if (!room || room.hostId !== myId) {
+    alert('Тільки хост може завершити гру');
+    return;
   }
 
-  // Очищаємо свою сесію
+  if (!confirm('Завершити гру для всіх гравців?')) return;
+
+  room.status = 'closed';
+  await saveRoom(room);
+  await new Promise(r => setTimeout(r, 3000));
+  await deleteRoom();
+
   localStorage.removeItem('bunker_roomCode');
   localStorage.removeItem('bunker_myName');
   roomCode = '';
   myName   = '';
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   showScreen('landingScreen');
-});
-async function deleteRoom() {
-  await fetch(`${DB_URL}/rooms/${roomCode}.json`, {
-    method: 'DELETE'
-  });
-}
+  document.getElementById('endGameBtn').style.display = 'none';
+});  

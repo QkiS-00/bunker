@@ -1,6 +1,3 @@
-// =============================================
-// ПЕРЕМИКАННЯ ЕКРАНІВ
-// =============================================
 function showScreen(id) {
   ['landingScreen','lobbyScreen','gameScreen','finaleScreen']
     .forEach(s => {
@@ -10,13 +7,9 @@ function showScreen(id) {
   document.getElementById(id).style.display = 'block';
 }
 
-// =============================================
-// ЛОБІ
-// =============================================
 function renderLobby(room) {
   showScreen('lobbyScreen');
   document.getElementById('roomCodeDisplay').textContent = room.code;
-
   const list = document.getElementById('playersList');
   list.innerHTML = '';
   room.players.forEach(p => {
@@ -27,16 +20,10 @@ function renderLobby(room) {
     row.innerHTML = `<span>${p.name}${isMe}${isHost}</span>`;
     list.appendChild(row);
   });
-
-  document.getElementById('hostSettings').style.display =
-    room.hostId === myId ? 'block' : 'none';
-  document.getElementById('waitingNote').style.display =
-    room.hostId === myId ? 'none' : 'block';
+  document.getElementById('hostSettings').style.display = room.hostId === myId ? 'block' : 'none';
+  document.getElementById('waitingNote').style.display  = room.hostId === myId ? 'none' : 'block';
 }
 
-// =============================================
-// СВОЯ КАРТКА + ЗДІБНІСТЬ
-// =============================================
 function renderMyCard(me, room) {
   const container = document.getElementById('myCardContent');
   container.innerHTML = '';
@@ -44,7 +31,6 @@ function renderMyCard(me, room) {
     container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">Картка не знайдена</div>';
     return;
   }
-
   const round       = room.round;
   const playerCount = room.players.length;
   const revealed    = me.revealed || [];
@@ -80,16 +66,11 @@ function renderMyCard(me, room) {
     }
     container.appendChild(row);
   });
-
   renderAbilitySection(me, room, container);
 }
 
-// =============================================
-// ЗДІБНІСТЬ
-// =============================================
 function renderAbilitySection(me, room, container) {
   if (!me.card.ability) return;
-
   const ability = me.card.ability;
   const used    = me.card.abilityUsed;
   const section = document.createElement('div');
@@ -98,7 +79,6 @@ function renderAbilitySection(me, room, container) {
     background:${used ? 'rgba(255,255,255,0.02)' : 'rgba(181,72,31,0.08)'};
     border:1px solid ${used ? 'var(--border)' : 'var(--rust)'};
   `;
-
   let html = `
     <div style="color:${used ? 'var(--text-dim)' : 'var(--rust-light)'};
       font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">
@@ -107,14 +87,12 @@ function renderAbilitySection(me, room, container) {
     <div style="color:${used ? 'var(--text-dim)' : 'var(--text)'};
       font-size:13px;font-weight:bold;margin-bottom:6px;">${ability.name}</div>
   `;
-
   if (used) {
     html += `<div style="color:var(--text-dim);font-size:12px;font-style:italic;">Вже використана</div>`;
     section.innerHTML = html;
     container.appendChild(section);
     return;
   }
-
   const alivePlayers = room.players.filter(p => p.alive && p.id !== myId);
   const myIndex      = room.players.findIndex(p => p.id === myId);
   const prevNeighbor = room.players.slice(0, myIndex).reverse().find(p => p.alive && p.id !== myId);
@@ -124,87 +102,56 @@ function renderAbilitySection(me, room, container) {
   if (ability.type === 'replace_attr') {
     const attrName = ATTR_LABELS[ability.attr];
     if (ability.target === 'self') {
-      html += `
-        <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-          Замінює вашу: <b>${attrName}</b>
-        </div>
-        <button class="reveal-btn" style="width:100%;"
-          onclick="useAbility('${myId}', null)">Використати</button>`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Замінює вашу: <b>${attrName}</b></div>
+        <button class="reveal-btn" style="width:100%;" onclick="useAbility('${myId}', null)">Використати</button>`;
     } else if (ability.target === 'neighbor') {
-      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-        Замінює <b>${attrName}</b> сусіда</div>`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Замінює <b>${attrName}</b> сусіда</div>`;
       if (!neighbors.length) {
         html += `<div style="color:var(--text-dim);font-size:12px;">Немає живих сусідів</div>`;
       } else {
         neighbors.forEach(p => {
-          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
-            onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${p.id}', null)">${p.name}</button>`;
         });
       }
     } else {
-      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-        Замінює <b>${attrName}</b> будь-якого гравця</div>`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Замінює <b>${attrName}</b> будь-якого гравця</div>`;
       alivePlayers.forEach(p => {
-        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
-          onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${p.id}', null)">${p.name}</button>`;
       });
     }
-
   } else if (ability.type === 'immunity') {
     if (ability.target === 'self') {
-      html += `
-        <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-          Захищає вас від голосування цього раунду
-        </div>
-        <button class="reveal-btn" style="width:100%;"
-          onclick="useAbility('${myId}', null)">Використати</button>`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Захищає вас від голосування цього раунду</div>
+        <button class="reveal-btn" style="width:100%;" onclick="useAbility('${myId}', null)">Використати</button>`;
     } else if (ability.target === 'neighbor') {
-      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-        Захищає сусіда від голосування</div>`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Захищає сусіда від голосування</div>`;
       neighbors.forEach(p => {
-        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
-          onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${p.id}', null)">${p.name}</button>`;
       });
     } else {
-      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-        Захищає будь-якого гравця від голосування</div>`;
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Захищає будь-якого гравця від голосування</div>`;
       alivePlayers.forEach(p => {
-        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
-          onclick="useAbility('${p.id}', null)">${p.name}</button>`;
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${p.id}', null)">${p.name}</button>`;
       });
     }
-
   } else if (ability.type === 'spy') {
     if (spyState && spyState.targetId) {
       const target = room.players.find(p => p.id === spyState.targetId);
-      html += `
-        <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
-          Оберіть атрибут(и) гравця <b>${target?.name}</b>:
-        </div>`;
-
+      html += `<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Оберіть атрибут(и) гравця <b>${target?.name}</b>:</div>`;
       if (ability.attr === 'two') {
         html += `<div id="spyAttrPicks">`;
         ATTR_KEYS.forEach(key => {
-          html += `
-            <label style="display:flex;align-items:center;gap:8px;padding:6px 0;
-              border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;">
-              <input type="checkbox" value="${key}" style="width:auto;margin:0;"
-                onchange="updateSpyCheck()"> ${ATTR_LABELS[key]}
-            </label>`;
+          html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;">
+            <input type="checkbox" value="${key}" style="width:auto;margin:0;" onchange="updateSpyCheck()"> ${ATTR_LABELS[key]}</label>`;
         });
         html += `</div>
-          <button id="spyConfirmBtn" class="reveal-btn" style="width:100%;margin-top:10px;"
-            disabled onclick="confirmSpyTwo()">Підглянути (0/2 обрано)</button>
-          <button class="secondary" style="width:100%;margin-top:6px;font-size:12px;padding:8px;"
-            onclick="spyState=null;fetchRoom().then(r=>renderRoom(r))">← Назад</button>`;
+          <button id="spyConfirmBtn" class="reveal-btn" style="width:100%;margin-top:10px;" disabled onclick="confirmSpyTwo()">Підглянути (0/2 обрано)</button>
+          <button class="secondary" style="width:100%;margin-top:6px;font-size:12px;padding:8px;" onclick="spyState=null;fetchRoom().then(r=>renderRoom(r))">← Назад</button>`;
       } else {
         ATTR_KEYS.forEach(key => {
-          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
-            onclick="useAbility('${spyState.targetId}', '${key}')">
-            ${ATTR_LABELS[key]}</button>`;
+          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${spyState.targetId}', '${key}')">${ATTR_LABELS[key]}</button>`;
         });
-        html += `<button class="secondary" style="width:100%;margin-top:4px;font-size:12px;padding:8px;"
-          onclick="spyState=null;fetchRoom().then(r=>renderRoom(r))">← Назад</button>`;
+        html += `<button class="secondary" style="width:100%;margin-top:4px;font-size:12px;padding:8px;" onclick="spyState=null;fetchRoom().then(r=>renderRoom(r))">← Назад</button>`;
       }
     } else {
       const desc = ability.attr === 'all' ? 'Побачити ВСІ атрибути гравця' :
@@ -216,12 +163,10 @@ function renderAbilitySection(me, room, container) {
         const onclick = (ability.attr === 'one' || ability.attr === 'two')
           ? `spyState={targetId:'${p.id}',ability:null};fetchRoom().then(r=>renderRoom(r))`
           : `useAbility('${p.id}', '${ability.attr === 'all' ? 'all' : ability.attr}')`;
-        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;"
-          onclick="${onclick}">${p.name}</button>`;
+        html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="${onclick}">${p.name}</button>`;
       });
     }
   }
-
   section.innerHTML = html;
   container.appendChild(section);
 }
@@ -230,9 +175,9 @@ function updateSpyCheck() {
   const checks = document.querySelectorAll('#spyAttrPicks input:checked');
   const btn    = document.getElementById('spyConfirmBtn');
   if (!btn) return;
-  const count      = checks.length;
-  btn.disabled     = count !== 2;
-  btn.textContent  = `Підглянути (${count}/2 обрано)`;
+  const count     = checks.length;
+  btn.disabled    = count !== 2;
+  btn.textContent = `Підглянути (${count}/2 обрано)`;
   if (count > 2) checks[checks.length - 1].checked = false;
 }
 
@@ -243,16 +188,13 @@ async function confirmSpyTwo() {
   await useAbility(spyState.targetId, attrKey);
 }
 
-// =============================================
-// ІНШІ ГРАВЦІ (блок в екрані гри)
-// =============================================
 function renderGame(room) {
   showScreen('gameScreen');
-
   document.getElementById('roundDisplay').textContent       = room.round;
   document.getElementById('catastropheDisplay').textContent = room.catastrophe;
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
-   // Івент поточного раунду
+
+  // Івент раунду
   const eventBlock = document.getElementById('currentEventBlock');
   if (room.currentEvent) {
     eventBlock.style.display = 'block';
@@ -269,24 +211,19 @@ function renderGame(room) {
   const iVoted        = !!myVote || imEliminated;
   const immunePlayers = room.immunePlayers || [];
 
-  // --- Своя картка ---
   const myCardPanel = document.getElementById('myCardPanel');
   if (imEliminated) {
     let html = '<div class="panel-label">Ваша картка</div>';
-    html += `<div style="color:var(--blood);font-size:12px;text-align:center;
-      padding:8px 0 14px;letter-spacing:1px;">☠ Ви вибули — спостерігайте за грою</div>`;
+    html += `<div style="color:var(--blood);font-size:12px;text-align:center;padding:8px 0 14px;letter-spacing:1px;">☠ Ви вибули — спостерігайте за грою</div>`;
     if (me && me.card) {
       const revealed = me.revealed || [];
       ATTR_KEYS.forEach(key => {
         const isRevealed = revealed.includes(key);
-        html += `
-          <div class="attr-row">
-            <span class="attr-label">${ATTR_LABELS[key]}</span>
-            <span class="attr-value" style="${isRevealed ? '' : 'color:var(--text-dim);'}">${me.card[key]}</span>
-            <span style="font-size:11px;color:${isRevealed ? 'var(--rust-light)' : 'var(--border)'};">
-              ${isRevealed ? '✓' : '🔒'}
-            </span>
-          </div>`;
+        html += `<div class="attr-row">
+          <span class="attr-label">${ATTR_LABELS[key]}</span>
+          <span class="attr-value" style="${isRevealed ? '' : 'color:var(--text-dim);'}">${me.card[key]}</span>
+          <span style="font-size:11px;color:${isRevealed ? 'var(--rust-light)' : 'var(--border)'};">${isRevealed ? '✓' : '🔒'}</span>
+        </div>`;
       });
     }
     myCardPanel.innerHTML = html;
@@ -295,19 +232,15 @@ function renderGame(room) {
     if (me && me.card) renderMyCard(me, room);
   }
 
-  // --- Гравці + голосування ---
   const othersContainer = document.getElementById('othersContent');
   othersContainer.innerHTML = '';
-
   const alivePlayers = room.players.filter(p => p.alive);
   const totalVoters  = alivePlayers.length;
   const votedCount   = Object.keys(votes).length;
 
   const blockTitle = document.createElement('div');
   blockTitle.style.cssText = 'font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;';
-  blockTitle.textContent = isVoting
-    ? `Голосування • Проголосували: ${votedCount}/${totalVoters}`
-    : 'Гравці';
+  blockTitle.textContent = isVoting ? `Голосування • Проголосували: ${votedCount}/${totalVoters}` : 'Гравці';
   othersContainer.appendChild(blockTitle);
 
   if (isVoting && room.tieIds) {
@@ -318,8 +251,7 @@ function renderGame(room) {
   }
 
   const maxVoteCount = isVoting
-    ? Math.max(0, ...room.players.map(p =>
-        Object.values(votes).filter(v => v === p.id).length))
+    ? Math.max(0, ...room.players.map(p => Object.values(votes).filter(v => v === p.id).length))
     : 0;
 
   room.players.forEach(p => {
@@ -350,16 +282,13 @@ function renderGame(room) {
           ${p.name}${meTag}${hostTag}${deadTag}${immuneTag}
         </span>
         ${isVoting ? `<span style="font-size:13px;color:${isLeading ? 'var(--blood)' : 'var(--text-dim)'};">${voteCount} 🗳</span>` : ''}
-      </div>
-    `;
+      </div>`;
 
     if (isVoting && totalVoters > 0) {
       const pct = Math.round((voteCount / totalVoters) * 100);
-      html += `
-        <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:10px;">
-          <div style="height:3px;width:${pct}%;background:${isLeading ? 'var(--blood)' : 'var(--rust)'};
-            border-radius:2px;transition:width 0.3s;"></div>
-        </div>`;
+      html += `<div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:10px;">
+        <div style="height:3px;width:${pct}%;background:${isLeading ? 'var(--blood)' : 'var(--rust)'};border-radius:2px;transition:width 0.3s;"></div>
+      </div>`;
     }
 
     if (!isMe) {
@@ -368,16 +297,14 @@ function renderGame(room) {
       } else {
         revealed.forEach(key => {
           if (!p.card || !p.card[key]) return;
-          html += `
-            <div class="attr-row" style="padding:4px 0;">
-              <span class="attr-label">${ATTR_LABELS[key]}</span>
-              <span class="attr-value">${p.card[key]}</span>
-            </div>`;
+          html += `<div class="attr-row" style="padding:4px 0;">
+            <span class="attr-label">${ATTR_LABELS[key]}</span>
+            <span class="attr-value">${p.card[key]}</span>
+          </div>`;
         });
         const hiddenCount = ATTR_KEYS.length - revealed.length;
         if (hiddenCount > 0) {
-          html += `<div style="color:var(--text-dim);font-size:11px;font-style:italic;padding:4px 0;">
-            ще ${hiddenCount} прихованих...</div>`;
+          html += `<div style="color:var(--text-dim);font-size:11px;font-style:italic;padding:4px 0;">ще ${hiddenCount} прихованих...</div>`;
         }
       }
     }
@@ -386,15 +313,14 @@ function renderGame(room) {
       const canVoteThis = !room.tieIds || isTieTarget;
       if (canVoteThis) {
         const immuneDisabled = isImmune && !isMyChoice;
-        html += `
-          <button class="vote-btn"
-            style="margin-top:10px;width:100%;
-              ${isMyChoice ? 'background:var(--rust);color:#100b08;' : ''}
-              ${immuneDisabled ? 'opacity:0.3;cursor:not-allowed;' : ''}"
-            ${iVoted || immuneDisabled ? 'disabled' : ''}
-            onclick="castVote('${p.id}')">
-            ${isImmune ? '🛡 Має імунітет' : isMyChoice ? '✓ Ваш вибір' : 'Вигнати'}
-          </button>`;
+        html += `<button class="vote-btn"
+          style="margin-top:10px;width:100%;
+            ${isMyChoice ? 'background:var(--rust);color:#100b08;' : ''}
+            ${immuneDisabled ? 'opacity:0.3;cursor:not-allowed;' : ''}"
+          ${iVoted || immuneDisabled ? 'disabled' : ''}
+          onclick="castVote('${p.id}')">
+          ${isImmune ? '🛡 Має імунітет' : isMyChoice ? '✓ Ваш вибір' : 'Вигнати'}
+        </button>`;
       }
     }
 
@@ -402,7 +328,6 @@ function renderGame(room) {
     othersContainer.appendChild(block);
   });
 
-  // Скіп
   if (isVoting && !imEliminated) {
     const skipLimit   = getSkipLimit(room.players.length);
     const mySkipsUsed = (room.skipsUsed && room.skipsUsed[myId]) || 0;
@@ -413,37 +338,25 @@ function renderGame(room) {
 
     const skipRow = document.createElement('div');
     skipRow.style.cssText = 'margin-top:4px;padding-top:14px;border-top:1px solid var(--border);';
-
     if (skipBlocked) {
-      skipRow.innerHTML = `
-        <div style="color:var(--blood);font-size:12px;text-align:center;letter-spacing:1px;">
-          ⛔ Ви вичерпали свої скіпи (${mySkipsUsed}/${skipLimit})
-        </div>`;
+      skipRow.innerHTML = `<div style="color:var(--blood);font-size:12px;text-align:center;letter-spacing:1px;">⛔ Ви вичерпали свої скіпи (${mySkipsUsed}/${skipLimit})</div>`;
     } else {
-      skipRow.innerHTML = `
-        <button class="secondary" style="font-size:12px;padding:10px;
-          ${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
-          ${iVoted ? 'disabled' : ''}
-          onclick="castVote('skip')">
-          ${mySkipped
-            ? `✓ Ви пропустили (залишилось: ${skipsLeft - 1}/${skipLimit})`
-            : `Пропустити (залишилось: ${skipsLeft}/${skipLimit})`}
-        </button>`;
+      skipRow.innerHTML = `<button class="secondary" style="font-size:12px;padding:10px;${mySkipped ? 'border-color:var(--rust-light);color:var(--rust-light);' : ''}"
+        ${iVoted ? 'disabled' : ''} onclick="castVote('skip')">
+        ${mySkipped ? `✓ Ви пропустили (залишилось: ${skipsLeft - 1}/${skipLimit})` : `Пропустити (залишилось: ${skipsLeft}/${skipLimit})`}
+      </button>`;
     }
     othersContainer.appendChild(skipRow);
   }
 
-  // Кнопки хоста
   const voteBtn = document.getElementById('startVoteBtn');
   const nextBtn = document.getElementById('nextRoundBtn');
-
   if (isVoting) {
     voteBtn.style.display = 'none';
     if (room.hostId === myId && votedCount >= totalVoters) {
       nextBtn.style.display = 'block';
       document.getElementById('voteResultPanel').style.display = 'block';
-      document.getElementById('voteResultText').textContent =
-        'Всі проголосували. Натисніть щоб підвести підсумок.';
+      document.getElementById('voteResultText').textContent = 'Всі проголосували. Натисніть щоб підвести підсумок.';
     } else {
       nextBtn.style.display = 'none';
       document.getElementById('voteResultPanel').style.display = 'none';
@@ -455,28 +368,21 @@ function renderGame(room) {
   }
 }
 
-// =============================================
-// ФІНАЛ
-// =============================================
 function renderFinale(room) {
   showScreen('finaleScreen');
-
   const survivors = room.players.filter(p => p.alive);
   const list      = document.getElementById('survivorsList');
 
   list.innerHTML = `
     <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
-        text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
       <div style="color:var(--text);font-size:14px;">${room.catastrophe}</div>
     </div>
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
-        text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
       <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
     </div>
-    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
-      text-transform:uppercase;margin-bottom:12px;">Виживші</div>
+    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Виживші</div>
   `;
 
   survivors.forEach((p, i) => {
@@ -485,9 +391,7 @@ function renderFinale(room) {
     const el     = document.createElement('div');
     el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--rust);';
     el.innerHTML = `
-      <div onclick="toggleCard('${cardId}')"
-        style="display:flex;justify-content:space-between;align-items:center;
-          padding:12px 14px;cursor:pointer;">
+      <div onclick="toggleCard('${cardId}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
         <div>
           <span style="color:var(--rust-light);font-size:14px;">${p.name}</span>
           <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
@@ -495,13 +399,8 @@ function renderFinale(room) {
         <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
       </div>
       <div id="${cardId}" style="display:none;padding:0 14px 14px;">
-        ${ATTR_KEYS.map(key => `
-          <div class="attr-row">
-            <span class="attr-label">${ATTR_LABELS[key]}</span>
-            <span class="attr-value">${card[key] || '—'}</span>
-          </div>`).join('')}
-      </div>
-    `;
+        ${ATTR_KEYS.map(key => `<div class="attr-row"><span class="attr-label">${ATTR_LABELS[key]}</span><span class="attr-value">${card[key] || '—'}</span></div>`).join('')}
+      </div>`;
     list.appendChild(el);
   });
 
@@ -511,16 +410,13 @@ function renderFinale(room) {
     title.style.cssText = 'color:var(--blood);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:20px 0 12px;';
     title.textContent = '☠ Вибули';
     list.appendChild(title);
-
     eliminated.forEach((p, i) => {
       const cardId = 'elim_' + i;
       const card   = p.card || {};
       const el     = document.createElement('div');
       el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--blood);opacity:0.7;';
       el.innerHTML = `
-        <div onclick="toggleCard('${cardId}')"
-          style="display:flex;justify-content:space-between;align-items:center;
-            padding:12px 14px;cursor:pointer;">
+        <div onclick="toggleCard('${cardId}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
           <div>
             <span style="color:var(--blood);font-size:14px;">${p.name}</span>
             <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
@@ -529,22 +425,14 @@ function renderFinale(room) {
           <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
         </div>
         <div id="${cardId}" style="display:none;padding:0 14px 14px;">
-          ${ATTR_KEYS.map(key => `
-            <div class="attr-row">
-              <span class="attr-label">${ATTR_LABELS[key]}</span>
-              <span class="attr-value">${card[key] || '—'}</span>
-            </div>`).join('')}
-        </div>
-      `;
+          ${ATTR_KEYS.map(key => `<div class="attr-row"><span class="attr-label">${ATTR_LABELS[key]}</span><span class="attr-value">${card[key] || '—'}</span></div>`).join('')}
+        </div>`;
       list.appendChild(el);
     });
   }
 
-  document.getElementById('finaleText').textContent =
-    room.finale || 'Генеруємо історію...';
-      // Кнопка завершення тільки для хоста
-  const endBtn = document.getElementById('endGameBtn');
-  endBtn.style.display = room.hostId === myId ? 'block' : 'none';
+  document.getElementById('finaleText').textContent = room.finale || 'Генеруємо історію...';
+  document.getElementById('endGameBtn').style.display = room.hostId === myId ? 'block' : 'none';
 }
 
 function toggleCard(cardId) {
@@ -556,12 +444,6 @@ function toggleCard(cardId) {
   arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
 }
 
-// =============================================
-// ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
-// =============================================
-// =============================================
-// ГОЛОВНА ФУНКЦІЯ РЕНДЕРУ
-// =============================================
 function renderRoom(room) {
   if (!room) {
     fetchRoom().then(r => { if (r) renderRoom(r); });
@@ -582,16 +464,6 @@ function renderRoom(room) {
       renderFinale(room);
       break;
     case 'closed':
-      // Всіх виганяємо на головний екран
-      localStorage.removeItem('bunker_roomCode');
-      localStorage.removeItem('bunker_myName');
-      roomCode = '';
-      myName   = '';
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-      alert('Хост завершив гру. Дякуємо за участь!');
-      showScreen('landingScreen');
-      break;
-          case 'closed':
       localStorage.removeItem('bunker_roomCode');
       localStorage.removeItem('bunker_myName');
       roomCode = '';

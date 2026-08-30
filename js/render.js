@@ -382,7 +382,17 @@ function renderFinale(room) {
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
       <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
     </div>
+        ${(room.eventLog && room.eventLog.length) ? `
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>
+      ${room.eventLog.map(e => `
+        <div style="padding:6px 0;border-bottom:1px solid var(--border);
+          font-size:12px;color:var(--text);line-height:1.5;">${e}</div>
+      `).join('')}
+    </div>` : ''}
     <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Виживші</div>
+
   `;
 
   survivors.forEach((p, i) => {
@@ -460,8 +470,11 @@ function renderRoom(room) {
       renderGame(room);
       break;
     case 'ended':
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
       renderFinale(room);
+      // Зупиняємо polling тільки коли фінал вже згенерований
+      if (room.finale) {
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      }
       break;
     case 'closed':
       localStorage.removeItem('bunker_roomCode');

@@ -13,7 +13,7 @@ function getSkipLimit(playerCount) {
 
 function generateEventForRound(room) {
   if ([3, 6, 9].includes(room.round)) {
-    room.currentEvent = Math.random() < 0.25
+    room.currentEvent = Math.random() < 1.0
       ? pick(BUNKER_EVENTS)
       : null;
     if (room.currentEvent) {

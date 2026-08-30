@@ -42,7 +42,6 @@ document.getElementById('startVoteBtn').addEventListener('click', async () => {
   const room = await fetchRoom();
   if (!room) return;
 
-  // Перевірка що живих більше ніж місткість бункера
   const alivePlayers = room.players.filter(p => p.alive);
   if (alivePlayers.length <= room.capacity) {
     alert('Гравців вже достатньо мало — гра завершена!');
@@ -72,35 +71,25 @@ document.getElementById('roomCodeDisplay').addEventListener('click', () => {
   const code = document.getElementById('roomCodeDisplay').textContent;
   if (!code) return;
   navigator.clipboard.writeText(code).then(() => {
-    const el = document.getElementById('roomCodeDisplay');
+    const el       = document.getElementById('roomCodeDisplay');
     const original = el.textContent;
     el.textContent = 'скопійовано!';
     setTimeout(() => el.textContent = original, 1500);
   });
 });
-// =============================================
-// РЕКОНЕКТ ПРИ ЗАВАНТАЖЕННІ
-// =============================================
-window.addEventListener('load', async () => {
-  const reconnected = await tryReconnect();
-  if (!reconnected) {
-    // Показуємо стартовий екран
-    document.getElementById('landingScreen').style.display = 'block';
-  }
-});
+
 document.getElementById('endGameBtn').addEventListener('click', async () => {
-  // Перевірка що це хост
   const room = await fetchRoom();
   if (!room || room.hostId !== myId) {
     alert('Тільки хост може завершити гру');
     return;
   }
-
   if (!confirm('Завершити гру для всіх гравців?')) return;
 
   room.status = 'closed';
   await saveRoom(room);
-  await new Promise(r => setTimeout(r, 3000));
+
+  await new Promise(r => setTimeout(r, 1000));
   await deleteRoom();
 
   localStorage.removeItem('bunker_roomCode');
@@ -108,6 +97,16 @@ document.getElementById('endGameBtn').addEventListener('click', async () => {
   roomCode = '';
   myName   = '';
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-  showScreen('landingScreen');
   document.getElementById('endGameBtn').style.display = 'none';
-});  
+  showScreen('landingScreen');
+});
+
+// =============================================
+// РЕКОНЕКТ ПРИ ЗАВАНТАЖЕННІ
+// =============================================
+window.addEventListener('load', async () => {
+  const reconnected = await tryReconnect();
+  if (!reconnected) {
+    document.getElementById('landingScreen').style.display = 'block';
+  }
+});

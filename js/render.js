@@ -373,26 +373,28 @@ function renderFinale(room) {
   const survivors = room.players.filter(p => p.alive);
   const list      = document.getElementById('survivorsList');
 
-  list.innerHTML = `
+   list.innerHTML = `
     <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
       <div style="color:var(--text);font-size:14px;">${room.catastrophe}</div>
     </div>
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
+      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+        text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
       <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
     </div>
-        ${(room.eventLog && room.eventLog.length) ? `
+    ${(room.eventLog && room.eventLog.length) ? `
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
         text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>
       ${room.eventLog.map(e => `
-        <div style="padding:6px 0;border-bottom:1px solid var(--border);
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);
           font-size:12px;color:var(--text);line-height:1.5;">${e}</div>
       `).join('')}
     </div>` : ''}
-    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Виживші</div>
-
+    <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
+      text-transform:uppercase;margin-bottom:12px;">Виживші</div>
   `;
 
   survivors.forEach((p, i) => {
@@ -441,8 +443,16 @@ function renderFinale(room) {
     });
   }
 
-  document.getElementById('finaleText').textContent = room.finale || 'Генеруємо історію...';
-  document.getElementById('endGameBtn').style.display = room.hostId === myId ? 'block' : 'none';
+document.getElementById('finaleText').textContent = room.finale || 'Генеруємо історію...';
+  if (room.finale) {
+    finaleEl.textContent = room.finale;
+    finaleEl.style.color = 'var(--text)';
+    finaleEl.style.fontStyle = 'normal';
+  } else {
+    finaleEl.textContent = 'Генеруємо історію...';
+    finaleEl.style.color = 'var(--text-dim)';
+    finaleEl.style.fontStyle = 'italic';
+  }
 }
 
 function toggleCard(cardId) {
@@ -469,12 +479,13 @@ function renderRoom(room) {
       hasVoted = !!room.votes?.[myId];
       renderGame(room);
       break;
-    case 'ended':
+      case 'ended':
       renderFinale(room);
-      // Зупиняємо polling тільки коли фінал вже згенерований
+      // Зупиняємо polling тільки коли фінал вже є
       if (room.finale) {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
       }
+      // Якщо фіналу ще нема — polling продовжується і оновить екран коли з'явиться
       break;
     case 'closed':
       localStorage.removeItem('bunker_roomCode');

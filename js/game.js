@@ -13,7 +13,7 @@ function getSkipLimit(playerCount) {
 
 function generateEventForRound(room) {
   // 10% шанс в кожному раунді
-  room.currentEvent = Math.random() < 0.10
+  room.currentEvent = Math.random() < 1
     ? pick(BUNKER_EVENTS)
     : null;
   if (room.currentEvent) {

@@ -389,23 +389,17 @@ function renderFinale(room) {
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
         text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>
       ${(room.eventLog && room.eventLog.length) ? (
-        '<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">' +
-          '<div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;\n        text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>' +
-          room.eventLog.map(e => {
-            const colonIdx = e.indexOf(':');
-            const label = colonIdx >= 0 ? e.substring(0, colonIdx) : e;
-            const text = colonIdx >= 0 ? e.substring(colonIdx + 2) : '';
-            return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
-              '<span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;display:block;margin-bottom:4px;">' + label + '</span>' +
-              '<span style="color:var(--text);font-size:12px;line-height:1.5;">' + text + '</span>' +
-            '</div>';
-          }).join('') +
-        '</div>'
+        room.eventLog.map(e => {
+          const colonIdx = e.indexOf(':');
+          const label = colonIdx >= 0 ? e.substring(0, colonIdx) : e;
+          const text = colonIdx >= 0 ? e.substring(colonIdx + 2) : '';
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+            '<span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;display:block;margin-bottom:4px;">' + label + '</span>' +
+            '<span style="color:var(--text);font-size:12px;line-height:1.5;">' + text + '</span>' +
+          '</div>';
+        }).join('')
       ) : (
-        '<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">' +
-          '<div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;\n        text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>' +
-          '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">За час гри нічого особливого не сталось</div>' +
-        '</div>'
+        '<div style="color:var(--text-dim);font-size:12px;font-style:italic;">За час гри нічого особливого не сталось</div>'
       )}
     </div>
     <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;

@@ -385,15 +385,44 @@ function renderFinale(room) {
         text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
       <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
     </div>
-    ${(room.eventLog && room.eventLog.length) ? `
+
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
         text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>
-      ${room.eventLog.map(e => `
-        <div style="padding:8px 0;border-bottom:1px solid var(--border);
-          font-size:12px;color:var(--text);line-height:1.5;">${e}</div>
-      `).join('')}
-    </div>` : ''}
+      ${[3, 6, 9].map(roundNum => {
+        const eventLog   = room.eventLog || [];
+        const eventEntry = eventLog.find(e => e.startsWith(`Раунд ${roundNum}:`));
+        const maxRound   = room.round || 1;
+        const reached    = maxRound >= roundNum;
+
+        if (!reached) {
+          return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--border);font-size:11px;letter-spacing:1px;">
+              РАУНД ${roundNum} — гра не дійшла до цього раунду
+            </span>
+          </div>`;
+        }
+
+        if (eventEntry) {
+          return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;
+              display:block;margin-bottom:4px;">РАУНД ${roundNum}</span>
+            <span style="color:var(--text);font-size:12px;line-height:1.5;">
+              ${eventEntry.replace(`Раунд ${roundNum}: `, '')}
+            </span>
+          </div>`;
+        }
+
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;
+            display:block;margin-bottom:4px;">РАУНД ${roundNum}</span>
+          <span style="color:var(--text-dim);font-size:12px;font-style:italic;">
+            Нічого не сталось (75% шанс)
+          </span>
+        </div>`;
+      }).join('')}
+    </div>
+
     <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
       text-transform:uppercase;margin-bottom:12px;">Виживші</div>
   `;
@@ -457,31 +486,20 @@ function renderFinale(room) {
     });
   }
 
-  // Текст фіналу
   const finaleEl = document.getElementById('finaleText');
   if (room.finale) {
-    finaleEl.textContent  = room.finale;
-    finaleEl.style.color  = 'var(--text)';
+    finaleEl.textContent     = room.finale;
+    finaleEl.style.color     = 'var(--text)';
     finaleEl.style.fontStyle = 'normal';
   } else {
-    finaleEl.textContent  = 'Генеруємо історію...';
-    finaleEl.style.color  = 'var(--text-dim)';
+    finaleEl.textContent     = 'Генеруємо історію...';
+    finaleEl.style.color     = 'var(--text-dim)';
     finaleEl.style.fontStyle = 'italic';
   }
 
   document.getElementById('endGameBtn').style.display =
     room.hostId === myId ? 'block' : 'none';
 }
-
-function toggleCard(cardId) {
-  const el    = document.getElementById(cardId);
-  const arrow = document.getElementById('arrow_' + cardId);
-  if (!el) return;
-  const isOpen          = el.style.display !== 'none';
-  el.style.display      = isOpen ? 'none' : 'block';
-  arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
-}
-
 function renderRoom(room) {
   if (!room) {
     fetchRoom().then(r => { if (r) renderRoom(r); });
@@ -497,18 +515,27 @@ function renderRoom(room) {
       hasVoted = !!room.votes?.[myId];
       renderGame(room);
       break;
-        case 'ended':
-      // Якщо фінал вже є — рендеримо і зупиняємо polling назавжди
-      if (room.finale) {
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-        // Не перемальовуємо якщо екран вже показаний
-        if (document.getElementById('finaleScreen').style.display !== 'none') return;
-        renderFinale(room);
+
+    case 'ended':
+      // Якщо фінальний екран вже відкритий — не перемальовуємо,
+      // просто оновлюємо текст ШІ коли він з'явиться
+      if (document.getElementById('finaleScreen').style.display === 'block') {
+        const finaleEl = document.getElementById('finaleText');
+        if (room.finale && finaleEl.style.fontStyle === 'italic') {
+          finaleEl.textContent     = room.finale;
+          finaleEl.style.color     = 'var(--text)';
+          finaleEl.style.fontStyle = 'normal';
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        }
       } else {
-        // Фіналу ще нема — показуємо екран і чекаємо
+        // Перший раз — рендеримо весь екран
         renderFinale(room);
+        if (room.finale) {
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        }
       }
       break;
+
     case 'closed':
       localStorage.removeItem('bunker_roomCode');
       localStorage.removeItem('bunker_myName');

@@ -149,15 +149,16 @@ async function tryReconnect() {
     return false;
   }
 
-  const me = room.players.find(p => p.id === myId);
-    // Якщо гра закінчена — не реконектимось, йдемо на старт
-  if (room.status === 'ended') {
+  // Якщо кімната закрита — очищаємо
+  if (room.status === 'closed') {
     localStorage.removeItem('bunker_roomCode');
     localStorage.removeItem('bunker_myName');
     roomCode = '';
     myName   = '';
     return false;
   }
+
+  const me = room.players.find(p => p.id === myId);
   if (!me) {
     localStorage.removeItem('bunker_roomCode');
     localStorage.removeItem('bunker_myName');
@@ -167,6 +168,14 @@ async function tryReconnect() {
   }
 
   isHost = room.hostId === myId;
+
+  // Для ended — рендеримо фінал без polling якщо фінал вже є
+  if (room.status === 'ended') {
+    renderRoom(room);
+    if (!room.finale) startPolling(); // якщо фіналу ще нема — чекаємо
+    return true;
+  }
+
   startPolling();
   renderRoom(room);
   return true;

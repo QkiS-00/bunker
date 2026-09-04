@@ -370,10 +370,11 @@ function renderGame(room) {
 
 function renderFinale(room) {
   showScreen('finaleScreen');
+
   const survivors = room.players.filter(p => p.alive);
   const list      = document.getElementById('survivorsList');
 
-   list.innerHTML = `
+  list.innerHTML = `
     <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
         text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
@@ -403,7 +404,9 @@ function renderFinale(room) {
     const el     = document.createElement('div');
     el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--rust);';
     el.innerHTML = `
-      <div onclick="toggleCard('${cardId}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+      <div onclick="toggleCard('${cardId}')"
+        style="display:flex;justify-content:space-between;align-items:center;
+          padding:12px 14px;cursor:pointer;">
         <div>
           <span style="color:var(--rust-light);font-size:14px;">${p.name}</span>
           <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
@@ -411,7 +414,11 @@ function renderFinale(room) {
         <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
       </div>
       <div id="${cardId}" style="display:none;padding:0 14px 14px;">
-        ${ATTR_KEYS.map(key => `<div class="attr-row"><span class="attr-label">${ATTR_LABELS[key]}</span><span class="attr-value">${card[key] || '—'}</span></div>`).join('')}
+        ${ATTR_KEYS.map(key => `
+          <div class="attr-row">
+            <span class="attr-label">${ATTR_LABELS[key]}</span>
+            <span class="attr-value">${card[key] || '—'}</span>
+          </div>`).join('')}
       </div>`;
     list.appendChild(el);
   });
@@ -422,13 +429,16 @@ function renderFinale(room) {
     title.style.cssText = 'color:var(--blood);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:20px 0 12px;';
     title.textContent = '☠ Вибули';
     list.appendChild(title);
+
     eliminated.forEach((p, i) => {
       const cardId = 'elim_' + i;
       const card   = p.card || {};
       const el     = document.createElement('div');
       el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--blood);opacity:0.7;';
       el.innerHTML = `
-        <div onclick="toggleCard('${cardId}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+        <div onclick="toggleCard('${cardId}')"
+          style="display:flex;justify-content:space-between;align-items:center;
+            padding:12px 14px;cursor:pointer;">
           <div>
             <span style="color:var(--blood);font-size:14px;">${p.name}</span>
             <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
@@ -437,22 +447,30 @@ function renderFinale(room) {
           <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
         </div>
         <div id="${cardId}" style="display:none;padding:0 14px 14px;">
-          ${ATTR_KEYS.map(key => `<div class="attr-row"><span class="attr-label">${ATTR_LABELS[key]}</span><span class="attr-value">${card[key] || '—'}</span></div>`).join('')}
+          ${ATTR_KEYS.map(key => `
+            <div class="attr-row">
+              <span class="attr-label">${ATTR_LABELS[key]}</span>
+              <span class="attr-value">${card[key] || '—'}</span>
+            </div>`).join('')}
         </div>`;
       list.appendChild(el);
     });
   }
 
-document.getElementById('finaleText').textContent = room.finale || 'Генеруємо історію...';
+  // Текст фіналу
+  const finaleEl = document.getElementById('finaleText');
   if (room.finale) {
-    finaleEl.textContent = room.finale;
-    finaleEl.style.color = 'var(--text)';
+    finaleEl.textContent  = room.finale;
+    finaleEl.style.color  = 'var(--text)';
     finaleEl.style.fontStyle = 'normal';
   } else {
-    finaleEl.textContent = 'Генеруємо історію...';
-    finaleEl.style.color = 'var(--text-dim)';
+    finaleEl.textContent  = 'Генеруємо історію...';
+    finaleEl.style.color  = 'var(--text-dim)';
     finaleEl.style.fontStyle = 'italic';
   }
+
+  document.getElementById('endGameBtn').style.display =
+    room.hostId === myId ? 'block' : 'none';
 }
 
 function toggleCard(cardId) {
@@ -479,13 +497,17 @@ function renderRoom(room) {
       hasVoted = !!room.votes?.[myId];
       renderGame(room);
       break;
-      case 'ended':
-      renderFinale(room);
-      // Зупиняємо polling тільки коли фінал вже є
+        case 'ended':
+      // Якщо фінал вже є — рендеримо і зупиняємо polling назавжди
       if (room.finale) {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        // Не перемальовуємо якщо екран вже показаний
+        if (document.getElementById('finaleScreen').style.display !== 'none') return;
+        renderFinale(room);
+      } else {
+        // Фіналу ще нема — показуємо екран і чекаємо
+        renderFinale(room);
       }
-      // Якщо фіналу ще нема — polling продовжується і оновить екран коли з'явиться
       break;
     case 'closed':
       localStorage.removeItem('bunker_roomCode');

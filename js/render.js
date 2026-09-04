@@ -380,12 +380,7 @@ function renderFinale(room) {
         text-transform:uppercase;margin-bottom:6px;">⚠ Катастрофа</div>
       <div style="color:var(--text);font-size:14px;">${room.catastrophe}</div>
     </div>
-    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
-        text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
-      <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
-    </div>
-    ${(room.eventLog && room.eventLog.length) ? `
+        ${(room.eventLog && room.eventLog.length) ? `
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
         text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>
@@ -406,6 +401,27 @@ function renderFinale(room) {
         За час гри нічого особливого не сталось
       </div>
     </div>`}
+      ${[3, 6, 9].map(roundNum => {
+        const eventLog   = room.eventLog || [];
+        const eventEntry = eventLog.find(e => e.startsWith('Раунд ' + roundNum + ':'));
+        const maxRound   = room.round || 1;
+        const reached    = maxRound >= roundNum;
+        const randomEvent = BUNKER_EVENTS[Math.floor(Math.random() * BUNKER_EVENTS.length)];
+
+        if (eventEntry) {
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+            '<span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;display:block;margin-bottom:4px;">РАУНД ' + roundNum + ' — сталось</span>' +
+            '<span style="color:var(--text);font-size:12px;line-height:1.5;">' + eventEntry.replace('Раунд ' + roundNum + ': ', '') + '</span>' +
+          '</div>';
+        }
+
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+          '<span style="color:' + (reached ? 'var(--text-dim)' : 'var(--border)') + ';font-size:11px;letter-spacing:1px;display:block;margin-bottom:4px;">' +
+          'РАУНД ' + roundNum + ' — ' + (reached ? 'нічого не сталось (75% шанс)' : 'гра не дійшла') + '</span>' +
+          '<span style="color:var(--text-dim);font-size:12px;line-height:1.5;font-style:italic;">Могло бути: ' + randomEvent + '</span>' +
+        '</div>';
+      }).join('')}
+    </div>
     <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
       text-transform:uppercase;margin-bottom:12px;">Виживші</div>
   `;

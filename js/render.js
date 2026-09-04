@@ -385,44 +385,30 @@ function renderFinale(room) {
         text-transform:uppercase;margin-bottom:6px;">🏠 Бункер</div>
       <div style="color:var(--text);font-size:14px;">${room.bunker}</div>
     </div>
-
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
       <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
         text-transform:uppercase;margin-bottom:10px;">⚡ Події в бункері</div>
       ${[3, 6, 9].map(roundNum => {
         const eventLog   = room.eventLog || [];
-        const eventEntry = eventLog.find(e => e.startsWith(`Раунд ${roundNum}:`));
+        const eventEntry = eventLog.find(e => e.startsWith('Раунд ' + roundNum + ':'));
         const maxRound   = room.round || 1;
         const reached    = maxRound >= roundNum;
-
-        if (!reached) {
-          return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
-            <span style="color:var(--border);font-size:11px;letter-spacing:1px;">
-              РАУНД ${roundNum} — гра не дійшла до цього раунду
-            </span>
-          </div>`;
-        }
+        const randomEvent = BUNKER_EVENTS[Math.floor(Math.random() * BUNKER_EVENTS.length)];
 
         if (eventEntry) {
-          return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
-            <span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;
-              display:block;margin-bottom:4px;">РАУНД ${roundNum}</span>
-            <span style="color:var(--text);font-size:12px;line-height:1.5;">
-              ${eventEntry.replace(`Раунд ${roundNum}: `, '')}
-            </span>
-          </div>`;
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+            '<span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;display:block;margin-bottom:4px;">РАУНД ' + roundNum + ' — сталось</span>' +
+            '<span style="color:var(--text);font-size:12px;line-height:1.5;">' + eventEntry.replace('Раунд ' + roundNum + ': ', '') + '</span>' +
+          '</div>';
         }
 
-        return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
-          <span style="color:var(--rust-light);font-size:11px;letter-spacing:1px;
-            display:block;margin-bottom:4px;">РАУНД ${roundNum}</span>
-          <span style="color:var(--text-dim);font-size:12px;font-style:italic;">
-            Нічого не сталось (75% шанс)
-          </span>
-        </div>`;
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">' +
+          '<span style="color:' + (reached ? 'var(--text-dim)' : 'var(--border)') + ';font-size:11px;letter-spacing:1px;display:block;margin-bottom:4px;">' +
+          'РАУНД ' + roundNum + ' — ' + (reached ? 'нічого не сталось (75% шанс)' : 'гра не дійшла') + '</span>' +
+          '<span style="color:var(--text-dim);font-size:12px;line-height:1.5;font-style:italic;">Могло бути: ' + randomEvent + '</span>' +
+        '</div>';
       }).join('')}
     </div>
-
     <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
       text-transform:uppercase;margin-bottom:12px;">Виживші</div>
   `;
@@ -432,23 +418,22 @@ function renderFinale(room) {
     const card   = p.card || {};
     const el     = document.createElement('div');
     el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--rust);';
-    el.innerHTML = `
-      <div onclick="toggleCard('${cardId}')"
-        style="display:flex;justify-content:space-between;align-items:center;
-          padding:12px 14px;cursor:pointer;">
-        <div>
-          <span style="color:var(--rust-light);font-size:14px;">${p.name}</span>
-          <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
-        </div>
-        <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
-      </div>
-      <div id="${cardId}" style="display:none;padding:0 14px 14px;">
-        ${ATTR_KEYS.map(key => `
-          <div class="attr-row">
-            <span class="attr-label">${ATTR_LABELS[key]}</span>
-            <span class="attr-value">${card[key] || '—'}</span>
-          </div>`).join('')}
-      </div>`;
+    el.innerHTML =
+      '<div onclick="toggleCard(\'' + cardId + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">' +
+        '<div>' +
+          '<span style="color:var(--rust-light);font-size:14px;">' + p.name + '</span>' +
+          '<span style="color:var(--text-dim);font-size:12px;margin-left:8px;">' + (card.profession || '') + '</span>' +
+        '</div>' +
+        '<span id="arrow_' + cardId + '" style="color:var(--text-dim);font-size:14px;">▶</span>' +
+      '</div>' +
+      '<div id="' + cardId + '" style="display:none;padding:0 14px 14px;">' +
+        ATTR_KEYS.map(key =>
+          '<div class="attr-row">' +
+            '<span class="attr-label">' + ATTR_LABELS[key] + '</span>' +
+            '<span class="attr-value">' + (card[key] || '—') + '</span>' +
+          '</div>'
+        ).join('') +
+      '</div>';
     list.appendChild(el);
   });
 
@@ -464,24 +449,23 @@ function renderFinale(room) {
       const card   = p.card || {};
       const el     = document.createElement('div');
       el.style.cssText = 'margin-bottom:10px;border:1px solid var(--border);border-left:3px solid var(--blood);opacity:0.7;';
-      el.innerHTML = `
-        <div onclick="toggleCard('${cardId}')"
-          style="display:flex;justify-content:space-between;align-items:center;
-            padding:12px 14px;cursor:pointer;">
-          <div>
-            <span style="color:var(--blood);font-size:14px;">${p.name}</span>
-            <span style="color:var(--text-dim);font-size:12px;margin-left:8px;">${card.profession || ''}</span>
-            <span style="color:var(--blood);font-size:11px;margin-left:6px;">☠</span>
-          </div>
-          <span id="arrow_${cardId}" style="color:var(--text-dim);font-size:14px;">▶</span>
-        </div>
-        <div id="${cardId}" style="display:none;padding:0 14px 14px;">
-          ${ATTR_KEYS.map(key => `
-            <div class="attr-row">
-              <span class="attr-label">${ATTR_LABELS[key]}</span>
-              <span class="attr-value">${card[key] || '—'}</span>
-            </div>`).join('')}
-        </div>`;
+      el.innerHTML =
+        '<div onclick="toggleCard(\'' + cardId + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">' +
+          '<div>' +
+            '<span style="color:var(--blood);font-size:14px;">' + p.name + '</span>' +
+            '<span style="color:var(--text-dim);font-size:12px;margin-left:8px;">' + (card.profession || '') + '</span>' +
+            '<span style="color:var(--blood);font-size:11px;margin-left:6px;">☠</span>' +
+          '</div>' +
+          '<span id="arrow_' + cardId + '" style="color:var(--text-dim);font-size:14px;">▶</span>' +
+        '</div>' +
+        '<div id="' + cardId + '" style="display:none;padding:0 14px 14px;">' +
+          ATTR_KEYS.map(key =>
+            '<div class="attr-row">' +
+              '<span class="attr-label">' + ATTR_LABELS[key] + '</span>' +
+              '<span class="attr-value">' + (card[key] || '—') + '</span>' +
+            '</div>'
+          ).join('') +
+        '</div>';
       list.appendChild(el);
     });
   }
@@ -500,6 +484,17 @@ function renderFinale(room) {
   document.getElementById('endGameBtn').style.display =
     room.hostId === myId ? 'block' : 'none';
 }
+
+function toggleCard(cardId) {
+  const el    = document.getElementById(cardId);
+  const arrow = document.getElementById('arrow_' + cardId);
+  if (!el) return;
+  const isOpen          = el.style.display !== 'none';
+  el.style.display      = isOpen ? 'none' : 'block';
+  arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
+
+window.toggleCard = toggleCard;
 function renderRoom(room) {
   if (!room) {
     fetchRoom().then(r => { if (r) renderRoom(r); });

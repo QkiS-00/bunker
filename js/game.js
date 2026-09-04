@@ -12,18 +12,16 @@ function getSkipLimit(playerCount) {
 }
 
 function generateEventForRound(room) {
-  if ([3, 6, 9].includes(room.round)) {
-    room.currentEvent = Math.random() < 1.0
-      ? pick(BUNKER_EVENTS)
-      : null;
-    if (room.currentEvent) {
-      room.eventLog = room.eventLog || [];
-      room.eventLog.push(`Раунд ${room.round}: ${room.currentEvent}`);
-    }
-  } else {
-    room.currentEvent = null;
+  // 10% шанс в кожному раунді
+  room.currentEvent = Math.random() < 0.10
+    ? pick(BUNKER_EVENTS)
+    : null;
+  if (room.currentEvent) {
+    room.eventLog = room.eventLog || [];
+    room.eventLog.push(`Раунд ${room.round}: ${room.currentEvent}`);
   }
 }
+
 
 // =============================================
 // ГЕНЕРАЦІЯ ПЕРСОНАЖІВ

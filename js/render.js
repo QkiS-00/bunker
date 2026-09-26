@@ -187,6 +187,13 @@ async function confirmSpyTwo() {
   const attrKey = Array.from(checks).map(c => c.value).join(',');
   await useAbility(spyState.targetId, attrKey);
 }
+function formatMonths(months) {
+  if (months < 12) return months + ' міс.';
+  const years = Math.floor(months / 12);
+  const rem   = months % 12;
+  if (rem === 0) return years + ' р.';
+  return years + ' р. ' + rem + ' міс.';
+}
 
 function renderGame(room) {
     if (room.lang) currentLang = room.lang;
@@ -194,10 +201,19 @@ function renderGame(room) {
   document.getElementById('roundDisplay').textContent       = room.round;
   document.getElementById('catastropheDisplay').textContent = room.catastrophe;
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
-    // Їжа і вода
-  if (document.getElementById('foodDisplay')) {
-    document.getElementById('foodDisplay').textContent  = room.food  || '—';
-    document.getElementById('waterDisplay').textContent = room.water || '—';
+    // Їжа і вода — якщо нема в room генеруємо на льоту
+  const foodEl  = document.getElementById('foodDisplay');
+  const waterEl = document.getElementById('waterDisplay');
+  if (foodEl && waterEl) {
+    if (!room.food) {
+      const foodMonths  = Math.floor(Math.random() * 600) + 1;
+      const waterMonths = Math.floor(Math.random() * 600) + 1;
+      room.food  = pick(FOOD_OPTIONS)  + ' — ' + formatMonths(foodMonths);
+      room.water = pick(WATER_OPTIONS) + ' — ' + formatMonths(waterMonths);
+      saveRoom(room);
+    }
+    foodEl.textContent  = room.food;
+    waterEl.textContent = room.water;
   }
 
   // Сусідній бункер

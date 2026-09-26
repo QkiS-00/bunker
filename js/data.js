@@ -1063,3 +1063,39 @@ let currentLang = 'uk';
 function t(key) {
   return (TRANSLATIONS[currentLang] || TRANSLATIONS['uk'])[key] || key;
 }
+// Українські мітки атрибутів
+const ATTR_LABELS_UK = {
+  genderAge:    'Стать і вік',
+  profession:   'Професія',
+  health:       'Здоров\'я',
+  hobby:        'Хобі',
+  phobia:       'Фобія',
+  luggage:      'Багаж',
+  bioFact:      'Факт біографії',
+  specialSkill: 'Особливий навик'
+};
+
+const ATTR_LABELS_RU = {
+  genderAge:    'Пол и возраст',
+  profession:   'Профессия',
+  health:       'Здоровье',
+  hobby:        'Хобби',
+  phobia:       'Фобия',
+  luggage:      'Багаж',
+  bioFact:      'Факт биографии',
+  specialSkill: 'Особый навык'
+};
+
+function getAttrLabels() {
+  return currentLang === 'uk' ? ATTR_LABELS_UK : ATTR_LABELS_RU;
+}
+
+const FOOD_OPTIONS_UK = [
+  'Консерви та крупи', 'Сухпайки', 'Заморожені продукти', 'Зерно та борошно',
+  'Тушонка', 'Рибні консерви', 'Макарони та бобові', 'Сухофрукти та горіхи'
+];
+
+const WATER_OPTIONS_UK = [
+  'Цистерна з фільтром', 'Підземне джерело', 'Система збору дощу',
+  'Запас бутильованої води', 'Свердловина з насосом', 'Розтоплення льоду'
+];

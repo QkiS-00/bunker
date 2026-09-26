@@ -11,17 +11,31 @@ function getSkipLimit(playerCount) {
   return 4;
 }
 
+function formatMonths(months) {
+  if (currentLang === 'uk') {
+    if (months < 12) return months + ' міс.';
+    const years = Math.floor(months / 12);
+    const rem   = months % 12;
+    if (rem === 0) return years + ' р.';
+    return years + ' р. ' + rem + ' міс.';
+  } else {
+    if (months < 12) return months + ' мес.';
+    const years = Math.floor(months / 12);
+    const rem   = months % 12;
+    if (rem === 0) return years + ' л.';
+    return years + ' л. ' + rem + ' мес.';
+  }
+}
+
 function generateEventForRound(room) {
-  // 10% шанс в кожному раунді
   room.currentEvent = Math.random() < 0.1
     ? pick(BUNKER_EVENTS)
     : null;
   if (room.currentEvent) {
     room.eventLog = room.eventLog || [];
-    room.eventLog.push(`Раунд ${room.round}: ${room.currentEvent}`);
+    room.eventLog.push('Раунд ' + room.round + ': ' + room.currentEvent);
   }
 }
-
 
 // =============================================
 // ГЕНЕРАЦІЯ ПЕРСОНАЖІВ
@@ -37,81 +51,60 @@ function generateCard() {
     bioFact:      pick(DATA.bioFact),
     specialSkill: pick(DATA.specialSkill),
     ability:      Math.random() < 0.2 ? pick(ABILITIES) : null,
-    abilityUsed:  false
+    abilityUsed:  false,
+    neighborAbility:     Math.random() < 0.08,
+    neighborAbilityUsed: false
   };
 }
 
 function dealCards(room) {
-  room.players.forEach(p => {
-    p.card     = generateCard();
-    p.revealed = [];
-  });
-  room.catastrophe   = pick(DATA.catastrophe);
-  room.bunker        = pick(DATA.bunker);
-  room.status        = 'playing';
-  room.round         = 1;
-  room.immunePlayers = [];
-  room.currentEvent  = null;
-  room.eventLog      = [];
-  return room;
-  function dealCards(room) {
-  room.players.forEach(p => {
-    p.card     = generateCard();
-    p.revealed = [];
-  });
-  room.catastrophe   = pick(DATA.catastrophe);
-  room.bunker        = pick(DATA.bunker);
-  room.status        = 'playing';
-  room.round         = 1;
-  room.immunePlayers = [];
-  room.currentEvent  = null;
-  room.eventLog      = [];
-  room.lang          = room.lang || 'uk';
+  const fo = currentLang === 'uk' ? FOOD_OPTIONS_UK  : FOOD_OPTIONS;
+  const wo = currentLang === 'uk' ? WATER_OPTIONS_UK : WATER_OPTIONS;
 
-  // Їжа і вода — випадковий запас від 1 місяця до 50 років
+  room.players.forEach(p => {
+    p.card     = generateCard();
+    p.revealed = [];
+  });
+
+  room.catastrophe = pick(DATA.catastrophe);
+  room.bunker      = pick(DATA.bunker);
+  room.status      = 'playing';
+  room.round       = 1;
+  room.immunePlayers   = [];
+  room.currentEvent    = null;
+  room.eventLog        = [];
+  room.lang            = currentLang;
+
   const foodMonths  = Math.floor(Math.random() * 600) + 1;
   const waterMonths = Math.floor(Math.random() * 600) + 1;
-  room.food  = pick(FOOD_OPTIONS)  + ' — ' + formatMonths(foodMonths);
-  room.water = pick(WATER_OPTIONS) + ' — ' + formatMonths(waterMonths);
+  room.food  = pick(fo) + ' — ' + formatMonths(foodMonths);
+  room.water = pick(wo) + ' — ' + formatMonths(waterMonths);
 
-  // Сусідній бункер — 8% шанс
-  room.neighborBunker = Math.random() < 0.08
-    ? pick(NEIGHBOR_BUNKERS)
-    : null;
+  room.neighborBunker   = Math.random() < 0.08 ? pick(NEIGHBOR_BUNKERS) : null;
   room.neighborRevealed = false;
-
-  // Кожен гравець має шанс на здібність сусіднього бункера (окремо 8%)
-  room.players.forEach(p => {
-    if (!p.card.ability && Math.random() < 0.08) {
-      p.card.neighborAbility     = true;
-      p.card.neighborAbilityUsed = false;
-    }
-  });
 
   return room;
 }
 
-function formatMonths(months) {
-  if (months < 12) return months + ' міс.';
-  const years = Math.floor(months / 12);
-  const rem   = months % 12;
-  if (rem === 0) return years + ' р.';
-  return years + ' р. ' + rem + ' міс.';
-}
-}
+// =============================================
+// СУСІДНІЙ БУНКЕР
+// =============================================
 async function revealNeighbor() {
   const room = await fetchRoom();
   if (!room || !room.neighborBunker) return;
   const me = room.players.find(p => p.id === myId);
-  if (!me || !me.card.neighborAbility || me.card.neighborAbilityUsed) return;
+  if (!me || !me.card || !me.card.neighborAbility || me.card.neighborAbilityUsed) return;
 
-  room.neighborRevealed      = true;
+  room.neighborRevealed       = true;
   me.card.neighborAbilityUsed = true;
-  room.log.push(`[Сусід] ${me.name} розкрив сусідній бункер: ${room.neighborBunker.name}`);
+  room.log = room.log || [];
+  room.log.push('[Сусід] ' + me.name + ' розкрив сусідній бункер: ' + room.neighborBunker.name);
 
   await saveRoom(room);
   renderRoom(room);
 }
+
+window.revealNeighbor = revealNeighbor;
 
 // =============================================
 // РОЗКРИТТЯ АТРИБУТІВ
@@ -128,6 +121,8 @@ async function revealAttr(attrKey) {
   renderRoom(room);
 }
 
+window.revealAttr = revealAttr;
+
 // =============================================
 // ЗДІБНОСТІ
 // =============================================
@@ -143,6 +138,7 @@ async function useAbility(targetId, attrKey) {
   if (!me || !me.card || !me.card.ability || me.card.abilityUsed) return;
 
   const ability = me.card.ability;
+  const labels  = getAttrLabels();
 
   if (ability.type === 'replace_attr') {
     const target = room.players.find(p => p.id === targetId);
@@ -152,7 +148,7 @@ async function useAbility(targetId, attrKey) {
     const newValue = pick(DATA[dataKey]);
     target.card[ability.attr] = newValue;
     me.card.abilityUsed = true;
-    room.log.push(`[Здібність] ${me.name} → "${ability.name}": у ${target.name} змінено ${ATTR_LABELS[ability.attr]} ("${oldValue}" → "${newValue}")`);
+    room.log.push('[Здібність] ' + me.name + ' → "' + ability.name + '": у ' + target.name + ' змінено ' + labels[ability.attr] + ' ("' + oldValue + '" → "' + newValue + '")');
     await saveRoom(room);
     renderRoom(room);
     return;
@@ -165,7 +161,7 @@ async function useAbility(targetId, attrKey) {
       room.immunePlayers.push(target.id);
     }
     me.card.abilityUsed = true;
-    room.log.push(`[Здібність] ${me.name} → "${ability.name}": ${target.name} отримав імунітет`);
+    room.log.push('[Здібність] ' + me.name + ' → "' + ability.name + '": ' + target.name + ' отримав імунітет');
     await saveRoom(room);
     renderRoom(room);
     return;
@@ -181,58 +177,50 @@ async function useAbility(targetId, attrKey) {
     }
     me.card.abilityUsed = true;
     spyState = null;
-    room.log.push(`[Здібність] ${me.name} використав шпигунську здібність`);
+    room.log.push('[Здібність] ' + me.name + ' використав шпигунську здібність');
     await saveRoom(room);
     showSpyModal(target, ability, attrKey);
     renderRoom(room);
   }
 }
 
+window.useAbility = useAbility;
+
 function showSpyModal(target, ability, attrKey) {
   const existing = document.getElementById('spyModal');
   if (existing) existing.remove();
-  const card = target.card;
-  let content = '';
+  const card   = target.card;
+  const labels = getAttrLabels();
+  let content  = '';
+
   if (ability.attr === 'all') {
-    content = ATTR_KEYS.map(key => `
-      <div class="attr-row">
-        <span class="attr-label">${ATTR_LABELS[key]}</span>
-        <span class="attr-value">${card[key] || '—'}</span>
-      </div>`).join('');
+    content = ATTR_KEYS.map(key =>
+      '<div class="attr-row"><span class="attr-label">' + labels[key] + '</span>' +
+      '<span class="attr-value">' + (card[key] || '—') + '</span></div>'
+    ).join('');
   } else if (ability.attr === 'one') {
-    content = `<div class="attr-row">
-      <span class="attr-label">${ATTR_LABELS[attrKey]}</span>
-      <span class="attr-value">${card[attrKey] || '—'}</span>
-    </div>`;
+    content = '<div class="attr-row"><span class="attr-label">' + labels[attrKey] + '</span>' +
+      '<span class="attr-value">' + (card[attrKey] || '—') + '</span></div>';
   } else if (ability.attr === 'two') {
-    content = attrKey.split(',').map(key => `
-      <div class="attr-row">
-        <span class="attr-label">${ATTR_LABELS[key]}</span>
-        <span class="attr-value">${card[key] || '—'}</span>
-      </div>`).join('');
+    content = attrKey.split(',').map(key =>
+      '<div class="attr-row"><span class="attr-label">' + labels[key] + '</span>' +
+      '<span class="attr-value">' + (card[key] || '—') + '</span></div>'
+    ).join('');
   } else {
-    content = `<div class="attr-row">
-      <span class="attr-label">${ATTR_LABELS[ability.attr]}</span>
-      <span class="attr-value">${card[ability.attr] || '—'}</span>
-    </div>`;
+    content = '<div class="attr-row"><span class="attr-label">' + labels[ability.attr] + '</span>' +
+      '<span class="attr-value">' + (card[ability.attr] || '—') + '</span></div>';
   }
+
   const modal = document.createElement('div');
   modal.id = 'spyModal';
-  modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.88);z-index:9999;
-    display:flex;align-items:center;justify-content:center;padding:20px;`;
-  modal.innerHTML = `
-    <div style="background:var(--card);border:1px solid var(--rust);
-      border-left:3px solid var(--rust-light);padding:24px;max-width:420px;width:100%;">
-      <div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;
-        text-transform:uppercase;margin-bottom:4px;">🔍 Шпигунство</div>
-      <div style="color:var(--text-dim);font-size:12px;margin-bottom:16px;">
-        Інформація про <b style="color:var(--text);">${target.name}</b> — тільки ви це бачите
-      </div>
-      ${content}
-      <button onclick="document.getElementById('spyModal').remove()"
-        style="margin-top:16px;">ОК, зрозумів</button>
-    </div>`;
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML =
+    '<div style="background:var(--card);border:1px solid var(--rust);border-left:3px solid var(--rust-light);padding:24px;max-width:420px;width:100%;">' +
+      '<div style="color:var(--rust-light);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">🔍 Шпигунство</div>' +
+      '<div style="color:var(--text-dim);font-size:12px;margin-bottom:16px;">Інформація про <b style="color:var(--text);">' + target.name + '</b> — тільки ви це бачите</div>' +
+      content +
+      '<button onclick="document.getElementById(\'spyModal\').remove()" style="margin-top:16px;">ОК</button>' +
+    '</div>';
   document.body.appendChild(modal);
 }
 
@@ -255,13 +243,14 @@ async function castVote(targetId) {
   renderRoom(room);
 }
 
+window.castVote = castVote;
+
 async function closeVoting(room) {
-  const votes      = room.votes || {};
-  const skipCount  = Object.values(votes).filter(v => v === 'skip').length;
+  const votes     = room.votes || {};
+  const skipCount = Object.values(votes).filter(v => v === 'skip').length;
   if (!room.log)           room.log = [];
   if (!room.immunePlayers) room.immunePlayers = [];
 
-  // Рахуємо реальні голоси (без скіпів і без імунних)
   const tally = {};
   Object.entries(votes).forEach(([voterId, targetId]) => {
     if (targetId === 'skip') return;
@@ -269,7 +258,6 @@ async function closeVoting(room) {
     tally[targetId] = (tally[targetId] || 0) + 1;
   });
 
-  // Скіпи по кожному гравцю
   if (!room.skipsUsed) room.skipsUsed = {};
   Object.entries(votes).forEach(([voterId, targetId]) => {
     if (targetId === 'skip') {
@@ -279,12 +267,11 @@ async function closeVoting(room) {
 
   room.immunePlayers = [];
 
-  // Якщо нема реальних голосів — всі пропустили
   if (Object.keys(tally).length === 0) {
     room.votingOpen = false;
     room.votes      = {};
     room.tieIds     = null;
-    room.log.push(`Раунд ${room.round}: нікого не вигнали (${skipCount} пропустили)`);
+    room.log.push('Раунд ' + room.round + ': нікого не вигнали (' + skipCount + ' пропустили)');
     room.status = 'playing';
     room.round += 1;
     generateEventForRound(room);
@@ -293,18 +280,14 @@ async function closeVoting(room) {
     return;
   }
 
-  // Максимум реальних голосів
   let maxVotes = 0;
-  Object.values(tally).forEach(count => {
-    if (count > maxVotes) maxVotes = count;
-  });
+  Object.values(tally).forEach(count => { if (count > maxVotes) maxVotes = count; });
 
-  // Скіп переміг
   if (skipCount > maxVotes) {
     room.votingOpen = false;
     room.votes      = {};
     room.tieIds     = null;
-    room.log.push(`Раунд ${room.round}: скіп переміг (${skipCount} vs ${maxVotes}) — нікого не вигнали`);
+    room.log.push('Раунд ' + room.round + ': скіп переміг (' + skipCount + ' vs ' + maxVotes + ') — нікого не вигнали');
     room.status = 'playing';
     room.round += 1;
     generateEventForRound(room);
@@ -313,13 +296,12 @@ async function closeVoting(room) {
     return;
   }
 
-  // Нічия між скіп і голосами
   if (skipCount === maxVotes) {
     room.votes      = {};
     room.votingOpen = true;
     room.tieIds     = null;
     hasVoted        = false;
-    room.log.push(`Раунд ${room.round}: нічия між скіп і голосами — переголосування`);
+    room.log.push('Раунд ' + room.round + ': нічия між скіп і голосами — переголосування');
     await saveRoom(room);
     renderRoom(room);
     return;
@@ -329,20 +311,18 @@ async function closeVoting(room) {
     .filter(([id, count]) => count === maxVotes)
     .map(([id]) => id);
 
-  // Нічия між гравцями
   if (topIds.length > 1) {
     room.votes      = {};
     room.votingOpen = true;
     room.tieIds     = topIds;
     hasVoted        = false;
     const names = topIds.map(id => room.players.find(p => p.id === id)?.name).join(' і ');
-    room.log.push(`Раунд ${room.round}: нічия між ${names} — переголосування`);
+    room.log.push('Раунд ' + room.round + ': нічия між ' + names + ' — переголосування');
     await saveRoom(room);
     renderRoom(room);
     return;
   }
 
-  // Виключення гравця
   const eliminatedId = topIds[0];
   const eliminated   = room.players.find(p => p.id === eliminatedId);
   if (eliminated) {
@@ -353,7 +333,7 @@ async function closeVoting(room) {
   room.votingOpen = false;
   room.votes      = {};
   room.tieIds     = null;
-  room.log.push(`Раунд ${room.round}: ${eliminated?.name} покинув бункер (${maxVotes} голосів, ${skipCount} пропустили)`);
+  room.log.push('Раунд ' + room.round + ': ' + (eliminated?.name) + ' покинув бункер (' + maxVotes + ' голосів, ' + skipCount + ' пропустили)');
 
   const alivePlayers = room.players.filter(p => p.alive);
   if (alivePlayers.length <= room.capacity) {
@@ -378,7 +358,10 @@ async function generateFinale(room) {
 
   const survivorDesc = survivors.map(p => {
     const c = p.card;
-    return `${p.name} — профессия: ${c.profession}, здоровье: ${c.health}, хобби: ${c.hobby}, навык: ${c.specialSkill}, багаж: ${c.luggage}, фобия: ${c.phobia}, биография: ${c.bioFact}`;
+    return p.name + ' — профессия: ' + c.profession + ', здоровье: ' + c.health +
+      ', хобби: ' + c.hobby + ', навык: ' + c.specialSkill +
+      ', багаж: ' + c.luggage + ', фобия: ' + c.phobia +
+      ', биография: ' + c.bioFact;
   }).join('\n');
 
   const eliminatedNames = eliminated.length
@@ -389,9 +372,16 @@ async function generateFinale(room) {
     ? '\nСобытия в бункере по раундам:\n' + room.eventLog.join('\n')
     : '';
 
+  const neighborInfo = (room.neighborBunker && room.neighborRevealed)
+    ? '\nСоседний бункер: ' + room.neighborBunker.name + ' (' + (room.neighborBunker.type === 'hostile' ? 'враждебный' : 'дружественный') + ') — ' + room.neighborBunker.desc
+    : '';
+
   const prompt = `Ты — постапокалиптический рассказчик.
 Катастрофа: ${room.catastrophe}
 Бункер: ${room.bunker}
+Еда: ${room.food || 'неизвестно'}
+Вода: ${room.water || 'неизвестно'}
+${neighborInfo}
 
 Выжившие:
 ${survivorDesc}
@@ -401,29 +391,30 @@ ${survivorDesc}
 История голосований:
 ${(room.log || []).join('\n')}
 ${eventHistory}
-Напиши короткий рассказ о том, как выжившие проживают в бункере. Будь максимально непристрасным, оценивай максимально правдиво не делая поблажек
-Учитывай время проживания, все характеристики персонажей, местность и катастрофу.не учитывай имена а обрщай внимание на пол и возраст особенно. 
 
-Правила вылазок и ресурсов:
-1. Если катастрофа или оборудование позволяют, они могут ненадолго покидать убежище для сбора припасов.
-2. СТРОГАЯ ЛОГИКА ПРЕДМЕТОВ: Все вещи, инструменты и медикаменты герои должны либо иметь в багаже изначально, либо смастерить из доступных материалов бункера, либо добыть во время описанных вылазок на поверхность. Ничего не должно появляться из ниоткуда.
-3. оценивай состояние бункера и то что он может изнашеваться.         4. добавь что б проходило радномное событие по типу нашли в бункере какие-то вещи или завелась крыса( но не делай их слишком много что б небыло перенасышения ивентами)
-В конце подведи итог: смогли ли они пережить этот срок или до какого года дожили. Так же смогли ли они потом востановить население и как они жили дальше после выхода из бункера(5-7 предложений)
+Напиши рассказ о том, как выжившие проживают в бункере. Будь максимально непристрастным.
+Учитывай время проживания, все характеристики персонажей, местность и катастрофу.
+Обращай внимание на пол и возраст, а не только на имена.
 
-`;
+Правила:
+1. Если катастрофа позволяет — они могут покидать убежище для сбора припасов.
+2. СТРОГАЯ ЛОГИКА ПРЕДМЕТОВ: вещи только из багажа, из материалов бункера или добытые на вылазках.
+3. Учитывай износ бункера со временем.
+4. Добавь случайные события (находки, мелкие проблемы) — но не перенасыщай ими рассказ.
+
+В конце подведи итог: смогли ли они пережить этот срок или до какого года дожили.
+Также напиши 5-7 предложений о том, как они жили после выхода из бункера и смогли ли восстановить население.`;
 
   try {
-    document.getElementById('finaleText').textContent = 'Генеруємо історію...';
+    document.getElementById('finaleText').textContent = t('generating');
     const response = await fetch('https://bunker-gemini.vladpugac90.workers.dev/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     if (!response.ok) {
       const err = await response.json();
-      throw new Error(err.error?.message || `Статус: ${response.status}`);
+      throw new Error(err.error?.message || 'Статус: ' + response.status);
     }
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -431,12 +422,14 @@ ${eventHistory}
     room.finale = text;
     await saveRoom(room);
     document.getElementById('finaleText').textContent = text;
+    document.getElementById('finaleText').style.color     = 'var(--text)';
+    document.getElementById('finaleText').style.fontStyle = 'normal';
   } catch (e) {
     console.error('Gemini error:', e);
-    document.getElementById('finaleText').textContent = `Помилка: ${e.message}`;
+    document.getElementById('finaleText').textContent = 'Помилка: ' + e.message;
   }
 }
 
 async function deleteRoom() {
-  await fetch(`${DB_URL}/rooms/${roomCode}.json`, { method: 'DELETE' });
+  await fetch(DB_URL + '/rooms/' + roomCode + '.json', { method: 'DELETE' });
 }

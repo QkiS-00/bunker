@@ -189,10 +189,54 @@ async function confirmSpyTwo() {
 }
 
 function renderGame(room) {
+    if (room.lang) currentLang = room.lang;
   showScreen('gameScreen');
   document.getElementById('roundDisplay').textContent       = room.round;
   document.getElementById('catastropheDisplay').textContent = room.catastrophe;
   document.getElementById('bunkerDisplay').textContent      = room.bunker;
+    // Їжа і вода
+  if (document.getElementById('foodDisplay')) {
+    document.getElementById('foodDisplay').textContent  = room.food  || '—';
+    document.getElementById('waterDisplay').textContent = room.water || '—';
+  }
+
+  // Сусідній бункер
+  const neighborBlock = document.getElementById('neighborBlock');
+  if (room.neighborBunker) {
+    neighborBlock.style.display = 'block';
+    const content = document.getElementById('neighborContent');
+    if (room.neighborRevealed) {
+      const nb = room.neighborBunker;
+      const typeColor = nb.type === 'hostile' ? 'var(--blood)' : '#4a7a4a';
+      content.innerHTML = `
+        <div style="color:${typeColor};font-size:12px;font-weight:bold;margin-bottom:6px;">
+          ${nb.type === 'hostile' ? '⚠ Ворожий' : '✓ Дружній'} — ${nb.name}
+        </div>
+        <div style="color:var(--text);font-size:12px;line-height:1.6;">${nb.desc}</div>
+      `;
+    } else {
+      // Показуємо кнопку тільки власнику здібності
+      const me = room.players.find(p => p.id === myId);
+      if (me && me.card && me.card.neighborAbility && !me.card.neighborAbilityUsed) {
+        content.innerHTML = `
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">
+            Поруч є бункер — ви можете розкрити його всім
+          </div>
+          <button class="reveal-btn" style="width:100%;" onclick="revealNeighbor()">
+            ${t('showNeighbor')}
+          </button>
+        `;
+      } else if (!room.neighborRevealed) {
+        content.innerHTML = `
+          <div style="color:var(--text-dim);font-size:12px;font-style:italic;">
+            Хтось із гравців знає про сусідній бункер...
+          </div>
+        `;
+      }
+    }
+  } else {
+    neighborBlock.style.display = 'none';
+  }
 
   // Івент раунду
   const eventBlock = document.getElementById('currentEventBlock');

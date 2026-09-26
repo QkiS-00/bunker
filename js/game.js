@@ -54,6 +54,63 @@ function dealCards(room) {
   room.currentEvent  = null;
   room.eventLog      = [];
   return room;
+  function dealCards(room) {
+  room.players.forEach(p => {
+    p.card     = generateCard();
+    p.revealed = [];
+  });
+  room.catastrophe   = pick(DATA.catastrophe);
+  room.bunker        = pick(DATA.bunker);
+  room.status        = 'playing';
+  room.round         = 1;
+  room.immunePlayers = [];
+  room.currentEvent  = null;
+  room.eventLog      = [];
+  room.lang          = room.lang || 'uk';
+
+  // Їжа і вода — випадковий запас від 1 місяця до 50 років
+  const foodMonths  = Math.floor(Math.random() * 600) + 1;
+  const waterMonths = Math.floor(Math.random() * 600) + 1;
+  room.food  = pick(FOOD_OPTIONS)  + ' — ' + formatMonths(foodMonths);
+  room.water = pick(WATER_OPTIONS) + ' — ' + formatMonths(waterMonths);
+
+  // Сусідній бункер — 8% шанс
+  room.neighborBunker = Math.random() < 0.08
+    ? pick(NEIGHBOR_BUNKERS)
+    : null;
+  room.neighborRevealed = false;
+
+  // Кожен гравець має шанс на здібність сусіднього бункера (окремо 8%)
+  room.players.forEach(p => {
+    if (!p.card.ability && Math.random() < 0.08) {
+      p.card.neighborAbility     = true;
+      p.card.neighborAbilityUsed = false;
+    }
+  });
+
+  return room;
+}
+
+function formatMonths(months) {
+  if (months < 12) return months + ' міс.';
+  const years = Math.floor(months / 12);
+  const rem   = months % 12;
+  if (rem === 0) return years + ' р.';
+  return years + ' р. ' + rem + ' міс.';
+}
+}
+async function revealNeighbor() {
+  const room = await fetchRoom();
+  if (!room || !room.neighborBunker) return;
+  const me = room.players.find(p => p.id === myId);
+  if (!me || !me.card.neighborAbility || me.card.neighborAbilityUsed) return;
+
+  room.neighborRevealed      = true;
+  me.card.neighborAbilityUsed = true;
+  room.log.push(`[Сусід] ${me.name} розкрив сусідній бункер: ${room.neighborBunker.name}`);
+
+  await saveRoom(room);
+  renderRoom(room);
 }
 
 // =============================================

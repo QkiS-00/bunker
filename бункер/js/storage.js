@@ -3,6 +3,7 @@
 // =============================================
 const DB_URL = 'https://bunker-4399d-default-rtdb.firebaseio.com';
 
+// Простий хелпер для запитів до Firebase REST API
 async function fbGet(path) {
   const res = await fetch(`${DB_URL}/${path}.json`);
   return res.json();
@@ -19,15 +20,12 @@ async function fbSet(path, data) {
 // =============================================
 // ЗМІННІ СЕСІЇ
 // =============================================
-let myId     = localStorage.getItem('bunker_myId')     || 'p_' + Math.random().toString(36).slice(2, 10);
-let myName   = localStorage.getItem('bunker_myName')   || '';
-let roomCode = localStorage.getItem('bunker_roomCode') || '';
+let myId     = 'p_' + Math.random().toString(36).slice(2, 10);
+let myName   = '';
+let roomCode = '';
 let isHost   = false;
 let pollTimer  = null;
 let hasVoted   = false;
-
-// Зберігаємо myId назавжди
-localStorage.setItem('bunker_myId', myId);
 
 // =============================================
 // ГЕНЕРАЦІЯ КОДУ КІМНАТИ
@@ -49,9 +47,6 @@ async function createRoom(hostName) {
   isHost   = true;
   roomCode = generateRoomCode();
 
-  localStorage.setItem('bunker_myName',   myName);
-  localStorage.setItem('bunker_roomCode', roomCode);
-
   const room = {
     code:        roomCode,
     hostId:      myId,
@@ -66,7 +61,6 @@ async function createRoom(hostName) {
     votes:       {},
     votingOpen:  false,
     tieIds:      null,
-    skipsUsed:   {},
     log:         [],
     finale:      null,
     createdAt:   Date.now()
@@ -96,10 +90,6 @@ async function joinRoom(code, name) {
   myName   = name;
   roomCode = code;
   isHost   = false;
-
-  localStorage.setItem('bunker_myName',   myName);
-  localStorage.setItem('bunker_roomCode', roomCode);
-
   startPolling();
   return room;
 }
@@ -132,52 +122,4 @@ function startPolling() {
     const room = await fetchRoom();
     if (room) renderRoom(room);
   }, 2500);
-}
-
-// =============================================
-// РЕКОНЕКТ — викликається при завантаженні сторінки
-// =============================================
-async function tryReconnect() {
-  if (!roomCode || !myName) return false;
-
-  const room = await fbGet(`rooms/${roomCode}`);
-  if (!room) {
-    localStorage.removeItem('bunker_roomCode');
-    localStorage.removeItem('bunker_myName');
-    roomCode = '';
-    myName   = '';
-    return false;
-  }
-
-  // Якщо кімната закрита — очищаємо
-  if (room.status === 'closed') {
-    localStorage.removeItem('bunker_roomCode');
-    localStorage.removeItem('bunker_myName');
-    roomCode = '';
-    myName   = '';
-    return false;
-  }
-
-  const me = room.players.find(p => p.id === myId);
-  if (!me) {
-    localStorage.removeItem('bunker_roomCode');
-    localStorage.removeItem('bunker_myName');
-    roomCode = '';
-    myName   = '';
-    return false;
-  }
-
-  isHost = room.hostId === myId;
-    if (room.lang) currentLang = room.lang;
-
-  // Для ended — рендеримо фінал без polling якщо фінал вже є
-  if (room.status === 'ended') {
-    renderRoom(room);
-    if (!room.finale) startPolling(); // якщо фіналу ще нема — чекаємо
-    return true;
-  }
-
-  startPolling();
-  renderRoom(room);
-  return true;
 }

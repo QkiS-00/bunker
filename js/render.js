@@ -142,14 +142,14 @@ function renderAbilitySection(me, room, container) {
         html += `<div id="spyAttrPicks">`;
         ATTR_KEYS.forEach(key => {
           html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;">
-            <input type="checkbox" value="${key}" style="width:auto;margin:0;" onchange="updateSpyCheck()"> ${ATTR_LABELS[key]}</label>`;
+            <input type="checkbox" value="${key}" style="width:auto;margin:0;" onchange="updateSpyCheck()"> ${getAttrLabels()[key]}</label>`;
         });
         html += `</div>
           <button id="spyConfirmBtn" class="reveal-btn" style="width:100%;margin-top:10px;" disabled onclick="confirmSpyTwo()">Підглянути (0/2 обрано)</button>
           <button class="secondary" style="width:100%;margin-top:6px;font-size:12px;padding:8px;" onclick="spyState=null;fetchRoom().then(r=>renderRoom(r))">← Назад</button>`;
       } else {
         ATTR_KEYS.forEach(key => {
-          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${spyState.targetId}', '${key}')">${ATTR_LABELS[key]}</button>`;
+          html += `<button class="reveal-btn" style="width:100%;margin-bottom:6px;" onclick="useAbility('${spyState.targetId}', '${key}')">${getAttrLabels()[key]}</button>`;
         });
         html += `<button class="secondary" style="width:100%;margin-top:4px;font-size:12px;padding:8px;" onclick="spyState=null;fetchRoom().then(r=>renderRoom(r))">← Назад</button>`;
       }
@@ -280,7 +280,7 @@ function renderGame(room) {
       ATTR_KEYS.forEach(key => {
         const isRevealed = revealed.includes(key);
         html += `<div class="attr-row">
-          <span class="attr-label">${ATTR_LABELS[key]}</span>
+          <span class="attr-label">${getAttrLabels()[key]}</span>
           <span class="attr-value" style="${isRevealed ? '' : 'color:var(--text-dim);'}">${me.card[key]}</span>
           <span style="font-size:11px;color:${isRevealed ? 'var(--rust-light)' : 'var(--border)'};">${isRevealed ? '✓' : '🔒'}</span>
         </div>`;
@@ -482,7 +482,7 @@ function renderFinale(room) {
       '<div id="' + cardId + '" style="display:none;padding:0 14px 14px;">' +
         ATTR_KEYS.map(key =>
           '<div class="attr-row">' +
-            '<span class="attr-label">' + ATTR_LABELS[key] + '</span>' +
+            '<span class="attr-label">' + getAttrLabels()[key] + '</span>' +
             '<span class="attr-value">' + (card[key] || '—') + '</span>' +
           '</div>'
         ).join('') +
@@ -514,7 +514,7 @@ function renderFinale(room) {
         '<div id="' + cardId + '" style="display:none;padding:0 14px 14px;">' +
           ATTR_KEYS.map(key =>
             '<div class="attr-row">' +
-              '<span class="attr-label">' + ATTR_LABELS[key] + '</span>' +
+              '<span class="attr-label">' + getAttrLabels()[key] + '</span>' +
               '<span class="attr-value">' + (card[key] || '—') + '</span>' +
             '</div>'
           ).join('') +

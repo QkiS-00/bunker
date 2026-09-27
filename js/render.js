@@ -50,17 +50,17 @@ function renderMyCard(me, room) {
     row.className = 'attr-row';
     if (isRevealed) {
       row.innerHTML = `
-        <span class="attr-label">${ATTR_LABELS[key]}</span>
+        <span class="attr-label">${getAttrLabels()[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
         <span style="font-size:11px;color:var(--rust-light);white-space:nowrap;">✓ відкрито</span>`;
     } else if (canReveal) {
       row.innerHTML = `
-        <span class="attr-label">${ATTR_LABELS[key]}</span>
+        <span class="attr-label">${getAttrLabels()[key]}</span>
         <span class="attr-value">${me.card[key]}</span>
         <button class="reveal-btn" onclick="revealAttr('${key}')">Розкрити</button>`;
     } else {
       row.innerHTML = `
-        <span class="attr-label">${ATTR_LABELS[key]}</span>
+        <span class="attr-label">${getAttrLabels()[key]}</span>
         <span class="attr-value" style="color:var(--text-dim);">${me.card[key]}</span>
         <span style="font-size:11px;color:var(--border);white-space:nowrap;">🔒 закрито</span>`;
     }
@@ -358,7 +358,7 @@ function renderGame(room) {
         revealed.forEach(key => {
           if (!p.card || !p.card[key]) return;
           html += `<div class="attr-row" style="padding:4px 0;">
-            <span class="attr-label">${ATTR_LABELS[key]}</span>
+            <span class="attr-label">${getAttrLabels()[key]}</span>
             <span class="attr-value">${p.card[key]}</span>
           </div>`;
         });

@@ -41,15 +41,16 @@ function generateEventForRound(room) {
 // ГЕНЕРАЦІЯ ПЕРСОНАЖІВ
 // =============================================
 function generateCard() {
+  const d = currentLang === 'uk' ? DATA_UK : DATA;
   return {
-    genderAge:    pick(DATA.genderAge),
-    profession:   pick(DATA.professions),
-    health:       pick(DATA.health),
-    hobby:        pick(DATA.hobbies),
-    phobia:       pick(DATA.phobias),
-    luggage:      pick(DATA.luggage),
-    bioFact:      pick(DATA.bioFact),
-    specialSkill: pick(DATA.specialSkill),
+    genderAge:    pick(d.genderAge),
+    profession:   pick(d.professions),
+    health:       pick(d.health),
+    hobby:        pick(d.hobbies),
+    phobia:       pick(d.phobias),
+    luggage:      pick(d.luggage),
+    bioFact:      pick(d.bioFact),
+    specialSkill: pick(d.specialSkill),
     ability:      Math.random() < 0.2 ? pick(ABILITIES) : null,
     abilityUsed:  false,
     neighborAbility:     Math.random() < 0.08,

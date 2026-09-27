@@ -76,8 +76,8 @@ function dealCards(room) {
   room.eventLog        = [];
   room.lang            = currentLang;
 
-  const foodMonths  = Math.floor(Math.random() * 600) + 1;
-  const waterMonths = Math.floor(Math.random() * 600) + 1;
+  const foodMonths  = Math.floor(Math.random() * 180) + 1;
+  const waterMonths = Math.floor(Math.random() * 180) + 1;
   room.food  = pick(fo) + ' — ' + formatMonths(foodMonths);
   room.water = pick(wo) + ' — ' + formatMonths(waterMonths);
 
